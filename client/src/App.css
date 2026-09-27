@@ -1,0 +1,371 @@
+/* ==========================================================
+   SIYARAM PALACE — APP.CSS
+   Animations & Custom Styles
+   ========================================================== */
+
+/* GLOBAL SMOOTH SCROLL */
+html {
+    scroll-behavior: smooth;
+}
+
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* SCROLL REVEAL ANIMATION */
+.reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger delays */
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* KEYFRAME ANIMATIONS */
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4); }
+    50% { box-shadow: 0 15px 45px rgba(37, 211, 102, 0.7); }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes rotate3DCrown {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* UTILITY ANIMATION CLASSES */
+.animate-fade-in { animation: fadeIn 0.6s ease; }
+.animate-fade-in-up { animation: fadeInUp 0.6s ease; }
+.animate-scale-in { animation: scaleIn 0.5s ease; }
+.animate-bounce { animation: bounce 2s infinite; }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-slide-down { animation: slideDown 0.5s ease; }
+.animate-shake { animation: shake 0.5s ease; }
+
+/* LOADING SKELETON */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 12px;
+}
+
+/* LOADER SPINNER */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #E5E7EB;
+    border-top-color: #D4AF37;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+
+/* BUTTON HOVER */
+.btn-hover-lift { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.btn-hover-lift:hover { transform: translateY(-3px); }
+
+.btn-hover-glow { transition: all 0.3s ease; }
+.btn-hover-glow:hover { box-shadow: 0 15px 40px rgba(212, 175, 55, 0.5); }
+
+/* CARD HOVER */
+.card-hover-zoom { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.card-hover-zoom:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(10, 30, 63, 0.15);
+}
+
+/* IMAGE ZOOM */
+.img-zoom { overflow: hidden; }
+.img-zoom img { transition: transform 0.6s ease; }
+.img-zoom:hover img { transform: scale(1.1); }
+
+/* GRADIENT TEXT */
+.gradient-text-gold {
+    background: linear-gradient(135deg, #D4AF37, #F0D878, #D4AF37);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 4s ease infinite;
+}
+
+/* PAGE FADE-IN */
+.page-fade-in { animation: fadeIn 0.6s ease; }
+
+/* PARALLAX */
+.parallax-bg { background-attachment: fixed; }
+@media (max-width: 768px) {
+    .parallax-bg { background-attachment: scroll; }
+}
+
+/* STAGGER LIST */
+.stagger-item {
+    opacity: 0;
+    animation: fadeInUp 0.6s ease forwards;
+}
+.stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-item:nth-child(6) { animation-delay: 0.6s; }
+
+/* HOVER UNDERLINE */
+.hover-underline { position: relative; }
+.hover-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #D4AF37;
+    transition: width 0.3s ease;
+}
+.hover-underline:hover::after { width: 100%; }
+
+/* SHINE EFFECT */
+.shine-effect {
+    position: relative;
+    overflow: hidden;
+}
+.shine-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: skewX(-25deg);
+    transition: left 0.6s;
+}
+.shine-effect:hover::before { left: 130%; }
+
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+
+
+/* Admin pages — mobile responsive */
+@media (max-width: 900px) {
+    .admin-content {
+        margin-left: 0 !important;
+        padding: 80px 16px 24px 16px !important;
+    }
+}
+
+
+/* Admin layout — sidebar ke saath */
+.admin-page {
+    min-height: 100vh;
+    background: #F5F7FA;
+}
+
+.admin-main {
+    margin-left: 260px;
+    padding: 32px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 900px) {
+    .admin-main {
+        margin-left: 0;
+        padding: 80px 16px 24px 16px;
+    }
+}
+
+
+
+
+/* ==================================================
+   ROOMS GRID RESPONSIVE
+   ================================================== */
+
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 28px;
+}
+
+/* Tablet — 2 columns */
+@media (max-width: 968px) {
+    .rooms-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* Mobile — 1 column, full width */
+@media (max-width: 640px) {
+    .rooms-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* Prevent overflow */
+.rooms-grid > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.rooms-grid img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+
+
+/* ============================================
+   ROOMS PAGE LAYOUT
+   ============================================ */
+
+/* Page wrapper — filters + main content */
+.rooms-page-wrapper {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* Filters sidebar */
+.rooms-filters {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(10, 30, 63, 0.06);
+    position: sticky;
+    top: 100px;
+}
+
+/* Main content area */
+.rooms-main {
+    min-width: 0;   /* Important for grid overflow */
+}
+
+/* ⭐ Rooms Grid — 3 columns */
+.rooms-grid-page {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+/* Tablet — 2 columns + filters upar */
+@media (max-width: 1024px) {
+    .rooms-page-wrapper {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .rooms-filters {
+        position: static;
+    }
+    
+    .rooms-grid-page {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+/* Mobile — 1 column */
+@media (max-width: 640px) {
+    .rooms-grid-page {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+
+/* Mobile hamburger button — desktop pe hide */
+.mobile-menu-btn {
+    display: none !important;
+}
+
+@media (max-width: 900px) {
+    .mobile-menu-btn {
+        display: flex !important;
+    }
+}

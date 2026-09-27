@@ -1,0 +1,17 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Admin scripts (sensitive)
+scripts/
+
+# Node
+node_modules/
+
+# Uploads
+public/uploads/
+
+# Logs
+*.log
+
