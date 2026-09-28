@@ -11,6 +11,10 @@
     {
       "source": "/images/:path*",
       "destination": "https://siyaram-backend-ytbk.onrender.com/images/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
