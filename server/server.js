@@ -14,37 +14,38 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
+// ⚠️ NAYA — Render reverse proxy ke peeche hai isliye ye zaroori hai
+app.set('trust proxy', 1);
+
 // ============================================
 // 1. SECURITY HEADERS (Helmet)
 // ============================================
 app.use(
     helmet({
-        crossOriginResourcePolicy: { policy: 'cross-origin' }, // Images ke liye
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
 );
 
 // ============================================
-// LOGGING — Requests track karo
+// LOGGING
 // ============================================
 if (process.env.NODE_ENV === 'production') {
-    app.use(morgan('combined'));   // Production: detailed logs
+    app.use(morgan('combined'));
 } else {
-    app.use(morgan('dev'));        // Development: short colorful
+    app.use(morgan('dev'));
 }
 
 // ============================================
-// 2. CORS (Sirf apne domain se access) 👈 UPDATED
+// 2. CORS
 // ============================================
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
 ];
 
-// Production URL env variable se add karo
 if (process.env.FRONTEND_URL) {
     allowedOrigins.push(process.env.FRONTEND_URL);
 }
-// Multiple frontend URLs (comma separated) support
 if (process.env.FRONTEND_URLS) {
     process.env.FRONTEND_URLS.split(',').forEach((url) => {
         const trimmed = url.trim();
@@ -55,7 +56,6 @@ if (process.env.FRONTEND_URLS) {
 app.use(
     cors({
         origin: (origin, callback) => {
-            // Postman/curl jaise requests ke liye (origin undefined)
             if (!origin) return callback(null, true);
 
             if (allowedOrigins.includes(origin)) {
@@ -72,7 +72,7 @@ app.use(
 );
 
 // ============================================
-// 3. BODY PARSER (Size limit)
+// 3. BODY PARSER
 // ============================================
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
@@ -85,8 +85,6 @@ app.use(mongoSanitize());
 // ============================================
 // 5. RATE LIMITING
 // ============================================
-
-// General API — 15 min me 200 requests per IP
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
@@ -98,7 +96,6 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Login/Register — Strict — 15 min me 10 attempts
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
@@ -110,7 +107,6 @@ const authLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Booking create — 1 ghante me 20 bookings
 const bookingLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 20,
@@ -120,14 +116,13 @@ const bookingLimiter = rateLimit({
     },
 });
 
-// Apply limiters
 app.use('/api', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/bookings', bookingLimiter);
 
 // ============================================
-// 6. GALLERY FOLDER AUTO-CREATE
+// 6. GALLERY FOLDER
 // ============================================
 const galleryDir = path.join(__dirname, 'public', 'uploads', 'gallery');
 fs.mkdirSync(galleryDir, { recursive: true });
@@ -135,10 +130,7 @@ fs.mkdirSync(galleryDir, { recursive: true });
 // ============================================
 // 7. STATIC FILES
 // ============================================
-app.use(
-    '/uploads',
-    express.static(path.join(__dirname, 'public', 'uploads'))
-);
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
 // ============================================
