@@ -8,7 +8,7 @@ function Amenities() {
         { icon: '🚿', title: 'Attached Bathroom', desc: 'Modern fixtures with hot water' },
         { icon: '📺', title: 'LED TV', desc: 'Cable connection with 100+ channels' },
         { icon: '🛎️', title: 'Room Service', desc: '24/7 in-room dining' },
-        { icon: '🍳', title: 'Breakfast', desc: 'Complimentary breakfast (Suites)' },
+        // { icon: '🍳', title: 'Breakfast', desc: 'Complimentary breakfast (Suites)' },
         { icon: '🚗', title: 'Free Parking', desc: 'Secured parking for 50+ cars' },
         { icon: '🧹', title: 'Daily Housekeeping', desc: 'Clean rooms every day' },
         { icon: '🔌', title: 'Power Backup', desc: '24/7 electricity backup' },

@@ -250,7 +250,7 @@ function RoomCard({ room, onDetails }) {
                 {/* Features */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     <FeaturePill icon="🛏️" text={room.bedType} />
-                    <FeaturePill icon="👁️" text={room.view} />
+                    {/* <FeaturePill icon="👁️" text={room.view} /> */}
                     <FeaturePill icon="👥" text={`Max ${room.maxGuests}`} />
                 </div>
 
@@ -264,7 +264,7 @@ function RoomCard({ room, onDetails }) {
                     {room.amenities?.ac && <AmenityIcon icon="❄️" label="AC" />}
                     {room.amenities?.wifi && <AmenityIcon icon="📶" label="WiFi" />}
                     {room.amenities?.tv && <AmenityIcon icon="📺" label="TV" />}
-                    {room.amenities?.breakfast && <AmenityIcon icon="🍳" label="Breakfast" />}
+                    {/* {room.amenities?.breakfast && <AmenityIcon icon="🍳" label="Breakfast" />} */}
                 </div>
 
                 {/* Price + Book */}
