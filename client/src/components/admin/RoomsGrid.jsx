@@ -106,7 +106,7 @@ function RoomsGrid() {
                             marginBottom: 4,
                         }}
                     >
-                        🏨 Room Management [NEW]
+                       🏨 Room Management [V11-TEST]
                     </h3>
                     <div style={{ fontSize: 12, color: '#9CA3AF' }}>
                         Total {rooms.length} rooms
