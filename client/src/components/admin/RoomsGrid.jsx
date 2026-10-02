@@ -17,6 +17,12 @@ function RoomsGrid() {
             if (data.success) {
                 setRooms(data.rooms);
                 setStats(data.stats);
+                // 🔍 DEBUG — console me floors check karo
+                console.log('🔍 All rooms:', data.rooms.map(r => ({
+                    roomNumber: r.roomNumber,
+                    floor: r.floor,
+                    floorType: typeof r.floor,
+                })));
             }
         } catch (e) {
             console.error(e);
@@ -33,7 +39,6 @@ function RoomsGrid() {
         }
     };
 
-    // 👇 NAYA: Price update handler
     const handlePriceUpdate = async (id, newPrice) => {
         try {
             await updateRoom(id, { pricePerNight: Number(newPrice) });
@@ -70,9 +75,14 @@ function RoomsGrid() {
             icon: '🧹',
         },
     };
-     
-    const ground = rooms.filter((r) => r.floor === 0); 
-    const first = rooms.filter((r) => r.floor === 1);
+
+    // ⚠️ Number() — string "0" aur number 0 dono handle karega
+    const ground = rooms.filter((r) => Number(r.floor) === 0);
+    const first = rooms.filter((r) => Number(r.floor) === 1);
+    const unassigned = rooms.filter((r) => {
+        const f = Number(r.floor);
+        return f !== 0 && f !== 1;
+    });
 
     return (
         <div
@@ -187,7 +197,7 @@ function RoomsGrid() {
 
             {/* First Floor */}
             {first.length > 0 && (
-                <div>
+                <div style={{ marginBottom: 24 }}>
                     <div
                         style={{
                             display: 'flex',
@@ -232,15 +242,62 @@ function RoomsGrid() {
                     </div>
                 </div>
             )}
+
+            {/* Unassigned — Safety */}
+            {unassigned.length > 0 && (
+                <div>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            marginBottom: 14,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: '#DC2626',
+                        }}
+                    >
+                        ⚠️ Unassigned Rooms
+                        <span
+                            style={{
+                                background: '#FEE2E2',
+                                padding: '2px 10px',
+                                borderRadius: 999,
+                                fontSize: 11,
+                                color: '#991B1B',
+                            }}
+                        >
+                            {unassigned.length} rooms
+                        </span>
+                    </div>
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fill, minmax(180px, 1fr))',
+                            gap: 12,
+                        }}
+                    >
+                        {unassigned.map((room) => (
+                            <RoomCell
+                                key={room._id}
+                                room={room}
+                                color={colors[room.status] || colors['Available']}
+                                onStatusChange={handleStatusChange}
+                                onPriceUpdate={handlePriceUpdate}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
 // ═══════════════════════════════════════════════
-// ROOM CELL — Ab price edit option bhi hai
+// ROOM CELL
 // ═══════════════════════════════════════════════
 function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
-    // Local state — editing price
     const [editingPrice, setEditingPrice] = useState(false);
     const [priceInput, setPriceInput] = useState(room.pricePerNight || 1500);
     const [saving, setSaving] = useState(false);
@@ -276,7 +333,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                 transition: 'all 0.3s',
             }}
         >
-            {/* Room number */}
             <div
                 style={{
                     fontSize: 22,
@@ -289,7 +345,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                 {room.roomNumber}
             </div>
 
-            {/* Status */}
             <div
                 style={{
                     fontSize: 10,
@@ -303,7 +358,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                 {color.icon} {room.status}
             </div>
 
-            {/* 👇 PRICE SECTION */}
             {!editingPrice ? (
                 <div
                     style={{
@@ -417,7 +471,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                 </div>
             )}
 
-            {/* Status dropdown */}
             <select
                 value={room.status}
                 onChange={(e) => onStatusChange(room._id, e.target.value)}
