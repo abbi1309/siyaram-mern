@@ -15,13 +15,16 @@ const Review = require('../models/Review');
 
 // Utility functions
 const generateInvoicePDF = require('../utils/generatePDF');
-const { sendBookingEmail } = require('../utils/sendEmail');
 
 // PDF generation
 const PDFDocument = require('pdfkit');
 
 // Coupon usage increment
 const { incrementUsage } = require('./couponController');
+
+// Email + Notification utilities
+const sendBookingEmail = require('../utils/sendBookingEmail');
+const { createNotification } = require('./notificationController');
 
 
 // ============================================
@@ -38,8 +41,8 @@ const createBooking = async (req, res) => {
             guests,
             specialRequests,
             guestPhone,
-            couponCode,        // 👈 NAYA — coupon code
-            discountAmount,    // 👈 NAYA — discount amount
+            couponCode,
+            discountAmount,
         } = req.body;
 
         // ============================================
@@ -165,7 +168,6 @@ const createBooking = async (req, res) => {
                     'Ye room in dates ke liye already booked hai. Kripya dusri dates ya dusra room choose karein.',
             });
         }
-        // ========================================================
 
         // ---------- NIGHTS CALCULATE ----------
         const nights = Math.max(
@@ -180,9 +182,7 @@ const createBooking = async (req, res) => {
         const FLAT_PRICE = 1500;
         const originalAmount = FLAT_PRICE * nights;
 
-        // ---------- 👇 COUPON DISCOUNT HANDLE ----------
-        // discountAmount frontend se aata hai (already verified)
-        // Validation: discount original amount se zyada nahi ho sakta
+        // ---------- COUPON DISCOUNT HANDLE ----------
         const safeDiscount = Math.min(
             Math.max(Number(discountAmount) || 0, 0),
             originalAmount
@@ -198,7 +198,7 @@ const createBooking = async (req, res) => {
         const sgstAmount = cgstAmount;
         const adjustedTotalTax = cgstAmount + sgstAmount;
 
-        // ---------- INVOICE NUMBER GENERATE (unique) ----------
+        // ---------- INVOICE NUMBER GENERATE ----------
         const year = new Date().getFullYear();
         const lastBooking = await Booking.findOne({
             invoiceNumber: { $regex: `^SYR${year}` },
@@ -222,7 +222,7 @@ const createBooking = async (req, res) => {
 
             guestName: req.user.name,
             guestEmail: req.user.email || '',
-            amount: totalAmount,                       // Final amount
+            amount: totalAmount,
 
             checkIn,
             checkOut,
@@ -231,7 +231,6 @@ const createBooking = async (req, res) => {
             specialRequests,
             guestPhone,
 
-            // Pricing (final amounts)
             subtotal,
             gstRate,
             cgstAmount,
@@ -239,7 +238,6 @@ const createBooking = async (req, res) => {
             totalTax,
             totalAmount,
 
-            // 👇 Coupon fields
             couponCode: couponCode || null,
             discountAmount: safeDiscount,
 
@@ -249,15 +247,44 @@ const createBooking = async (req, res) => {
             status: 'Pending',
         });
 
-        // ---------- 👇 INCREMENT COUPON USAGE ----------
-        // Agar coupon use hua to uska counter badhao
+        // ---------- INCREMENT COUPON USAGE ----------
         if (couponCode && safeDiscount > 0) {
             try {
                 await incrementUsage(couponCode, req.user._id);
             } catch (couponErr) {
-                // Coupon increment fail ho jaye to booking fail nahi karni
                 console.error('Coupon increment failed:', couponErr.message);
             }
+        }
+
+        // ============================================
+        // ✅ ADMIN EMAIL NOTIFICATION BHEJO
+        // ============================================
+        try {
+            const populatedBooking = await Booking.findById(booking._id).populate(
+                'room',
+                'roomNumber roomType'
+            );
+            await sendBookingEmail(populatedBooking);
+            console.log('✅ Booking notification email sent');
+        } catch (emailErr) {
+            console.error('❌ Booking email failed:', emailErr.message);
+            // Booking fail nahi karni email fail hone se
+        }
+
+        // ============================================
+        // ✅ ADMIN BELL NOTIFICATION CREATE KARO
+        // ============================================
+        try {
+            await createNotification({
+                type: 'booking',
+                title: `New Booking — ${booking.guestName || 'Guest'}`,
+                message: `Room ${room.roomNumber} • ₹${booking.totalAmount} • ${new Date(booking.checkIn).toLocaleDateString('en-IN')}`,
+                link: '/admin/bookings',
+                metadata: { bookingId: booking._id },
+            });
+            console.log('✅ Bell notification created');
+        } catch (notifErr) {
+            console.error('❌ Notification create failed:', notifErr.message);
         }
 
         // ---------- RESPONSE ----------
@@ -277,7 +304,6 @@ const createBooking = async (req, res) => {
 
 // ============================================
 // GET MY BOOKINGS
-// Logged-in user ki saari bookings
 // ============================================
 const getMyBookings = async (req, res) => {
     try {
@@ -309,7 +335,6 @@ const getMyBookings = async (req, res) => {
 
 // ============================================
 // GET BOOKING BY ID
-// Ek specific booking ki details
 // ============================================
 const getBookingById = async (req, res) => {
     try {
@@ -343,7 +368,6 @@ const getBookingById = async (req, res) => {
 
 // ============================================
 // DOWNLOAD INVOICE (PDF)
-// Booking ka PDF invoice generate karta hai
 // ============================================
 const downloadInvoice = async (req, res) => {
     try {
@@ -391,7 +415,6 @@ const downloadInvoice = async (req, res) => {
                 127
             );
 
-        // TAX INVOICE badge
         doc.roundedRect(430, 40, 130, 35, 6).fill(gold);
         doc.fontSize(13)
             .fillColor('#fff')
@@ -509,7 +532,6 @@ const downloadInvoice = async (req, res) => {
             sumTop + 65
         );
 
-        // 👇 Discount line (agar coupon use hua)
         if (booking.discountAmount && booking.discountAmount > 0) {
             doc.fillColor('#22C55E')
                 .text(
@@ -543,7 +565,6 @@ const downloadInvoice = async (req, res) => {
                 sumTop + 140
             );
 
-            // Badge with offset
             const badgeTop = sumTop + 175;
             const badgeColor =
                 booking.paymentStatus === 'paid' ? green : '#F59E0B';
@@ -569,7 +590,6 @@ const downloadInvoice = async (req, res) => {
                     { width: 180, align: 'center' }
                 );
         } else {
-            // No discount — original layout
             doc.moveTo(labelX, sumTop + 85)
                 .lineTo(560, sumTop + 85)
                 .stroke('#ddd');
@@ -646,7 +666,6 @@ const downloadInvoice = async (req, res) => {
 
 // ============================================
 // REQUEST CANCELLATION
-// User cancel request bhejta hai (admin approve karega)
 // ============================================
 const requestCancellation = async (req, res) => {
     try {
@@ -702,7 +721,6 @@ const requestCancellation = async (req, res) => {
 
 // ============================================
 // GET BOOKED DATES FOR ROOM
-// Frontend calendar me booked dates dikhane ke liye
 // ============================================
 const getBookedDates = async (req, res) => {
     try {
@@ -763,18 +781,6 @@ const getBookedDates = async (req, res) => {
         console.error('❌ getBookedDates error:', error);
         res.status(500).json({ success: false, message: error.message });
     }
-};
-
-
-// ============================================
-// HELPER — Date string format
-// ============================================
-const toDateStr = (date) => {
-    const d = new Date(date);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
 };
 
 

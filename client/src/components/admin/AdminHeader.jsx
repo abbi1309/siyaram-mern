@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from './NotificationBell';   // 👈 NAYA
 
 function AdminHeader({ onMenuClick }) {
     const { user, logout } = useAuth();
@@ -66,6 +67,9 @@ function AdminHeader({ onMenuClick }) {
             </div>
 
             <div style={{ flex: 1 }} />
+
+            {/* 👇 Notification Bell */}
+            <NotificationBell />
 
             {/* Profile */}
             <div ref={profileRef} style={{ position: 'relative' }}>
