@@ -1,0 +1,38 @@
+local= 
+admin emai = mabhay86200@gamil.com
+pass = #@Maurya#@2005
+
+versal admin = abhaym862005@gmail.com
+pass = maurya@2005
+
+gitpass = #@Maurya#@20055
+
+
+
+
+https://github.com/abbi1309/siyaram-mern.git
+
+
+
+
+mongodb+srv://siyaram_admin:<db_password>@cluster0.ldgyhfx.mongodb.net/?appName=Cluster0&compressors=zlib
+
+
+Username: siyaram_admin
+mongo atlas pass = 10lDv19tJNVLRrhv
+siyaram mongo - mongodb+srv://siyaram_admin:10lDv19tJNVLRrhv@cluster0.ldgyhfx.mongodb.net/siyaram_palace_mern?appName=Cluster0
+
+
+gmail 16 digit pass = laoi tovi hdsb fdwl
+
+
+JWT_SECRET= siyaram_jwt_secret_key_2026_change_in_production
+
+
+
+VITE_API_URL
+backend = https://siyaram-backend-ytbk.onrender.com
+
+
+
+https://siyaram-mern.vercel.app/

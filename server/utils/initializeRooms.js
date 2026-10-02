@@ -13,8 +13,8 @@ async function initializeRooms() {
         console.log('Cleared old rooms');
 
         const rooms = [];
-
-        for (let i = 1; i <= 6; i++) {
+        // GROUND FLOOR (5 rooms: 201-205)
+        for (let i = 1; i <= 5; i++) {
             rooms.push({
                 roomNumber: '1' + String(i).padStart(2, '0'),
                 roomType: 'Deluxe Room',
@@ -27,8 +27,8 @@ async function initializeRooms() {
                 status: 'Available'
             });
         }
-
-        for (let i = 1; i <= 6; i++) {
+        // FIRST FLOOR (7 rooms: 206-212
+        for (let i = 1; i <= 7; i++) {
             rooms.push({
                 roomNumber: '2' + String(i).padStart(2, '0'),
                 roomType: 'Executive Suite',
@@ -49,9 +49,9 @@ async function initializeRooms() {
 
         await Room.insertMany(rooms);
         console.log(`${rooms.length} rooms created successfully!`);
-        console.log(`   Ground Floor: 6 Deluxe Rooms (Rs 1500/night)`);
-        console.log(`   First Floor: 6 Executive Suites (Rs 2500/night)`);
-    } catch (error) {
+        console.log(`   Ground Floor: 5 Deluxe Rooms (Rs 1500/night)`);
+        console.log(`   First Floor: 7  Deluxe Rooms (Rs 1500/night)`);
+        } catch (error) {
         console.error('Room init error:', error.message);
     }
 }
