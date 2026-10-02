@@ -6,29 +6,45 @@ import toast from 'react-hot-toast';
 function RoomsGrid() {
     const [rooms, setRooms] = useState([]);
     const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [debugInfo, setDebugInfo] = useState('');
 
     useEffect(() => {
         loadRooms();
     }, []);
 
     const loadRooms = async () => {
+        setLoading(true);
         try {
             const data = await getAllRooms();
+            
             if (data.success) {
                 // Sort by room number
                 const sorted = [...data.rooms].sort(
                     (a, b) => parseInt(a.roomNumber) - parseInt(b.roomNumber)
                 );
+                
                 setRooms(sorted);
                 setStats(data.stats);
-
-                // 🔍 DEBUG
-                console.log('🟢 V4 Code Running - Total rooms:', data.rooms.length);
-                console.log('🟢 Room numbers:', sorted.map(r => r.roomNumber).join(', '));
-                console.log('🟢 First room:', sorted[0]);
+                
+                // Debug info
+                const info = `Total: ${sorted.length} | Rooms: ${sorted.map(r => r.roomNumber).join(', ')}`;
+                setDebugInfo(info);
+                
+                console.log('=========== DEBUG ===========');
+                console.log('Total rooms:', sorted.length);
+                console.log('Room numbers:', sorted.map(r => r.roomNumber));
+                console.log('Floors:', sorted.map(r => `${r.roomNumber}→${r.floor}`));
+                console.log('==============================');
+            } else {
+                setDebugInfo('API returned success=false');
             }
         } catch (e) {
-            console.error(e);
+            console.error('Error loading rooms:', e);
+            setDebugInfo('Error: ' + e.message);
+            toast.error('Failed to load rooms');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -69,6 +85,7 @@ function RoomsGrid() {
                 marginBottom: 25,
             }}
         >
+            {/* Header */}
             <div
                 style={{
                     display: 'flex',
@@ -89,10 +106,10 @@ function RoomsGrid() {
                             marginBottom: 4,
                         }}
                     >
-                        🏨 Room Management [V4]
+                        🏨 Room Management [NEW]
                     </h3>
                     <div style={{ fontSize: 12, color: '#9CA3AF' }}>
-                        Manage all {rooms.length} rooms
+                        Total {rooms.length} rooms
                     </div>
                 </div>
 
@@ -106,11 +123,46 @@ function RoomsGrid() {
                 )}
             </div>
 
-            {rooms.length === 0 ? (
+            {/* Debug Info */}
+            <div
+                style={{
+                    padding: '8px 12px',
+                    background: '#F0F9FF',
+                    border: '1px solid #BAE6FD',
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    fontSize: 11,
+                    color: '#0369A1',
+                    fontFamily: 'monospace',
+                    wordBreak: 'break-all',
+                }}
+            >
+                🔍 {debugInfo}
+            </div>
+
+            {/* Loading */}
+            {loading && (
                 <div style={{ textAlign: 'center', padding: 40, color: '#9CA3AF' }}>
                     ⏳ Loading rooms...
                 </div>
-            ) : (
+            )}
+
+            {/* Rooms Grid */}
+            {!loading && rooms.length === 0 && (
+                <div
+                    style={{
+                        textAlign: 'center',
+                        padding: 40,
+                        color: '#DC2626',
+                        background: '#FEF2F2',
+                        borderRadius: 12,
+                    }}
+                >
+                    ❌ No rooms loaded. Check console for details.
+                </div>
+            )}
+
+            {!loading && rooms.length > 0 && (
                 <div
                     style={{
                         display: 'grid',
@@ -169,7 +221,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                 borderRadius: 12,
                 padding: 14,
                 textAlign: 'center',
-                transition: 'all 0.3s',
             }}
         >
             <div
@@ -191,7 +242,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     fontWeight: 700,
                     marginBottom: 8,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
                 }}
             >
                 {color.icon} {room.status}
@@ -226,7 +276,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                             setPriceInput(room.pricePerNight || 1500);
                             setEditingPrice(true);
                         }}
-                        title="Edit price"
                         style={{
                             marginLeft: 4,
                             background: '#FEF3C7',
@@ -235,7 +284,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                             padding: '2px 6px',
                             fontSize: 11,
                             cursor: 'pointer',
-                            lineHeight: 1,
                         }}
                     >
                         ✏️
@@ -263,7 +311,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        title="Save"
                         style={{
                             padding: '4px 8px',
                             background: saving ? '#9CA3AF' : '#22C55E',
@@ -280,7 +327,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     <button
                         onClick={handleCancel}
                         disabled={saving}
-                        title="Cancel"
                         style={{
                             padding: '4px 8px',
                             background: '#F3F4F6',
@@ -289,7 +335,7 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                             borderRadius: 6,
                             fontSize: 12,
                             fontWeight: 800,
-                            cursor: saving ? 'not-allowed' : 'pointer',
+                            cursor: 'pointer',
                         }}
                     >
                         ✕
@@ -308,7 +354,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     border: '1px solid #ddd',
                     background: 'white',
                     cursor: 'pointer',
-                    fontFamily: 'inherit',
                     fontWeight: 600,
                     color: '#0A1E3F',
                 }}
