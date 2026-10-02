@@ -70,9 +70,9 @@ function RoomsGrid() {
             icon: '🧹',
         },
     };
-
-    const ground = rooms.filter((r) => r.floor === 1);
-    const first = rooms.filter((r) => r.floor === 2);
+     
+    const ground = rooms.filter((r) => r.floor === 0); 
+    const first = rooms.filter((r) => r.floor === 1);
 
     return (
         <div

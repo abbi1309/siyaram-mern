@@ -57,7 +57,7 @@ const initializeRooms = async () => {
         const firstFloorRooms = [];
         for (let i = 6; i <= 9; i++) {
             firstFloorRooms.push({
-                roomNumber: `20${i}`,       // 206, 207, 208, ..., 212
+                roomNumber: `20${i}`,       // 206, 207, 208, 209
                 roomType: 'Deluxe Room',
                 floor: 1,
                 pricePerNight: 1500,
@@ -79,7 +79,7 @@ const initializeRooms = async () => {
         // const firstFloorRooms = [];
         for (let i = 10; i <= 12; i++) {
             firstFloorRooms.push({
-                roomNumber: `2${i}`,       // 206, 207, 208, ..., 212
+                roomNumber: `2${i}`,       // 210,211,212
                 roomType: 'Deluxe Room',
                 floor: 1,
                 pricePerNight: 1500,
