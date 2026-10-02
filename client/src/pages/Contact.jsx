@@ -89,8 +89,8 @@ function Contact() {
                             icon="📞"
                             title="Call Us"
                             lines={[
-                                settings?.contact?.phone1 || '+91 9315377668',
-                                settings?.contact?.phone2 || '+91 8400675764',
+                                settings?.contact?.phone1 || '+91 ',
+                                settings?.contact?.phone2 || '+91 ',
                             ]}
                         />
                         <ContactCard
