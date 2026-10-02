@@ -9,7 +9,8 @@ import WhyChooseUs from '../components/WhyChooseUs';
 import Reviews from '../components/Reviews';
 import CTABanner from '../components/CTABanner';
 import Footer from '../components/Footer';
-import Chatbot from '../components/Chatbot';
+// import Chatbot from '../components/Chatbot';
+import WhatsAppButton from '../components/WhatsAppButton';
 import RoomDetailsModal from '../components/RoomDetailsModal';
 import Lightbox from '../components/Lightbox';
 import { getAllRooms } from '../api/rooms';
@@ -126,7 +127,7 @@ function Home() {
             {/* <Gallery onOpenLightbox={(src, caption) => setLightboxData({ src, caption })} /> */}
             <CTABanner />
             <Footer />
-            <Chatbot />
+            <WhatsAppButton />
 
             {selectedRoom && (
                 <RoomDetailsModal room={selectedRoom} onClose={() => setSelectedRoom(null)} />
