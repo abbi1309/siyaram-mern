@@ -15,14 +15,17 @@ function RoomsGrid() {
         try {
             const data = await getAllRooms();
             if (data.success) {
-                setRooms(data.rooms);
+                // Sort by room number
+                const sorted = [...data.rooms].sort(
+                    (a, b) => parseInt(a.roomNumber) - parseInt(b.roomNumber)
+                );
+                setRooms(sorted);
                 setStats(data.stats);
-                // 🔍 DEBUG — console me floors check karo
-                console.log('🔍 All rooms:', data.rooms.map(r => ({
-                    roomNumber: r.roomNumber,
-                    floor: r.floor,
-                    floorType: typeof r.floor,
-                })));
+
+                // 🔍 DEBUG
+                console.log('🟢 V4 Code Running - Total rooms:', data.rooms.length);
+                console.log('🟢 Room numbers:', sorted.map(r => r.roomNumber).join(', '));
+                console.log('🟢 First room:', sorted[0]);
             }
         } catch (e) {
             console.error(e);
@@ -50,39 +53,11 @@ function RoomsGrid() {
     };
 
     const colors = {
-        Available: {
-            bg: '#E8F5E9',
-            border: '#27AE60',
-            text: '#166534',
-            icon: '✓',
-        },
-        Occupied: {
-            bg: '#FEE2E2',
-            border: '#DC2626',
-            text: '#991B1B',
-            icon: '●',
-        },
-        Maintenance: {
-            bg: '#F3F4F6',
-            border: '#95A5A6',
-            text: '#4B5563',
-            icon: '🔧',
-        },
-        Cleaning: {
-            bg: '#FEF3C7',
-            border: '#F39C12',
-            text: '#92400E',
-            icon: '🧹',
-        },
+        Available: { bg: '#E8F5E9', border: '#27AE60', text: '#166534', icon: '✓' },
+        Occupied: { bg: '#FEE2E2', border: '#DC2626', text: '#991B1B', icon: '●' },
+        Maintenance: { bg: '#F3F4F6', border: '#95A5A6', text: '#4B5563', icon: '🔧' },
+        Cleaning: { bg: '#FEF3C7', border: '#F39C12', text: '#92400E', icon: '🧹' },
     };
-
-    // ⚠️ Number() — string "0" aur number 0 dono handle karega
-    const ground = rooms.filter((r) => Number(r.floor) === 0);
-    const first = rooms.filter((r) => Number(r.floor) === 1);
-    const unassigned = rooms.filter((r) => {
-        const f = Number(r.floor);
-        return f !== 0 && f !== 1;
-    });
 
     return (
         <div
@@ -114,7 +89,7 @@ function RoomsGrid() {
                             marginBottom: 4,
                         }}
                     >
-                        🏨 Room Management
+                        🏨 Room Management [V4]
                     </h3>
                     <div style={{ fontSize: 12, color: '#9CA3AF' }}>
                         Manage all {rooms.length} rooms
@@ -123,171 +98,35 @@ function RoomsGrid() {
 
                 {stats && (
                     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                        <StatBadge
-                            label="Available"
-                            value={stats.available}
-                            color="#27AE60"
-                        />
-                        <StatBadge
-                            label="Occupied"
-                            value={stats.occupied}
-                            color="#DC2626"
-                        />
-                        <StatBadge
-                            label="Cleaning"
-                            value={stats.cleaning}
-                            color="#F39C12"
-                        />
-                        <StatBadge
-                            label="Maintenance"
-                            value={stats.maintenance}
-                            color="#95A5A6"
-                        />
+                        <StatBadge label="Available" value={stats.available} color="#27AE60" />
+                        <StatBadge label="Occupied" value={stats.occupied} color="#DC2626" />
+                        <StatBadge label="Cleaning" value={stats.cleaning} color="#F39C12" />
+                        <StatBadge label="Maintenance" value={stats.maintenance} color="#95A5A6" />
                     </div>
                 )}
             </div>
 
-            {/* Ground Floor */}
-            {ground.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 14,
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: '#0A1E3F',
-                        }}
-                    >
-                        🏢 Ground Floor
-                        <span
-                            style={{
-                                background: '#F0F2F5',
-                                padding: '2px 10px',
-                                borderRadius: 999,
-                                fontSize: 11,
-                                color: '#6C757D',
-                            }}
-                        >
-                            {ground.length} rooms
-                        </span>
-                    </div>
-                    <div
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns:
-                                'repeat(auto-fill, minmax(180px, 1fr))',
-                            gap: 12,
-                        }}
-                    >
-                        {ground.map((room) => (
-                            <RoomCell
-                                key={room._id}
-                                room={room}
-                                color={colors[room.status] || colors['Available']}
-                                onStatusChange={handleStatusChange}
-                                onPriceUpdate={handlePriceUpdate}
-                            />
-                        ))}
-                    </div>
+            {rooms.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40, color: '#9CA3AF' }}>
+                    ⏳ Loading rooms...
                 </div>
-            )}
-
-            {/* First Floor */}
-            {first.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 14,
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: '#0A1E3F',
-                        }}
-                    >
-                        🏢 First Floor
-                        <span
-                            style={{
-                                background: '#F0F2F5',
-                                padding: '2px 10px',
-                                borderRadius: 999,
-                                fontSize: 11,
-                                color: '#6C757D',
-                            }}
-                        >
-                            {first.length} rooms
-                        </span>
-                    </div>
-                    <div
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns:
-                                'repeat(auto-fill, minmax(180px, 1fr))',
-                            gap: 12,
-                        }}
-                    >
-                        {first.map((room) => (
-                            <RoomCell
-                                key={room._id}
-                                room={room}
-                                color={colors[room.status] || colors['Available']}
-                                onStatusChange={handleStatusChange}
-                                onPriceUpdate={handlePriceUpdate}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Unassigned — Safety */}
-            {unassigned.length > 0 && (
-                <div>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 14,
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: '#DC2626',
-                        }}
-                    >
-                        ⚠️ Unassigned Rooms
-                        <span
-                            style={{
-                                background: '#FEE2E2',
-                                padding: '2px 10px',
-                                borderRadius: 999,
-                                fontSize: 11,
-                                color: '#991B1B',
-                            }}
-                        >
-                            {unassigned.length} rooms
-                        </span>
-                    </div>
-                    <div
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns:
-                                'repeat(auto-fill, minmax(180px, 1fr))',
-                            gap: 12,
-                        }}
-                    >
-                        {unassigned.map((room) => (
-                            <RoomCell
-                                key={room._id}
-                                room={room}
-                                color={colors[room.status] || colors['Available']}
-                                onStatusChange={handleStatusChange}
-                                onPriceUpdate={handlePriceUpdate}
-                            />
-                        ))}
-                    </div>
+            ) : (
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                        gap: 12,
+                    }}
+                >
+                    {rooms.map((room) => (
+                        <RoomCell
+                            key={room._id}
+                            room={room}
+                            color={colors[room.status] || colors['Available']}
+                            onStatusChange={handleStatusChange}
+                            onPriceUpdate={handlePriceUpdate}
+                        />
+                    ))}
                 </div>
             )}
         </div>
@@ -381,14 +220,7 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     >
                         ₹{room.pricePerNight || 1500}
                     </span>
-                    <span
-                        style={{
-                            fontSize: 9,
-                            color: '#6C757D',
-                        }}
-                    >
-                        /night
-                    </span>
+                    <span style={{ fontSize: 9, color: '#6C757D' }}>/night</span>
                     <button
                         onClick={() => {
                             setPriceInput(room.pricePerNight || 1500);
@@ -410,13 +242,7 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     </button>
                 </div>
             ) : (
-                <div
-                    style={{
-                        display: 'flex',
-                        gap: 4,
-                        marginBottom: 10,
-                    }}
-                >
+                <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
                     <input
                         type="number"
                         value={priceInput}
