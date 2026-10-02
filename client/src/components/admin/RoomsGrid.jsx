@@ -7,7 +7,6 @@ function RoomsGrid() {
     const [rooms, setRooms] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [debugInfo, setDebugInfo] = useState('');
 
     useEffect(() => {
         loadRooms();
@@ -17,31 +16,19 @@ function RoomsGrid() {
         setLoading(true);
         try {
             const data = await getAllRooms();
-            
+            console.log('🔥 [RoomsGrid V-FINAL] Response:', data);
+            console.log('🔥 Total rooms received:', data.rooms?.length);
+            console.log('🔥 Room numbers:', data.rooms?.map(r => r.roomNumber));
+
             if (data.success) {
-                // Sort by room number
                 const sorted = [...data.rooms].sort(
                     (a, b) => parseInt(a.roomNumber) - parseInt(b.roomNumber)
                 );
-                
                 setRooms(sorted);
                 setStats(data.stats);
-                
-                // Debug info
-                const info = `Total: ${sorted.length} | Rooms: ${sorted.map(r => r.roomNumber).join(', ')}`;
-                setDebugInfo(info);
-                
-                console.log('=========== DEBUG ===========');
-                console.log('Total rooms:', sorted.length);
-                console.log('Room numbers:', sorted.map(r => r.roomNumber));
-                console.log('Floors:', sorted.map(r => `${r.roomNumber}→${r.floor}`));
-                console.log('==============================');
-            } else {
-                setDebugInfo('API returned success=false');
             }
         } catch (e) {
-            console.error('Error loading rooms:', e);
-            setDebugInfo('Error: ' + e.message);
+            console.error('❌ Error:', e);
             toast.error('Failed to load rooms');
         } finally {
             setLoading(false);
@@ -64,15 +51,15 @@ function RoomsGrid() {
             toast.success(`Price updated to ₹${newPrice} ✅`);
             loadRooms();
         } catch (e) {
-            toast.error(e.response?.data?.message || 'Price update failed');
+            toast.error('Price update failed');
         }
     };
 
     const colors = {
-        Available: { bg: '#E8F5E9', border: '#27AE60', text: '#166534', icon: '✓' },
-        Occupied: { bg: '#FEE2E2', border: '#DC2626', text: '#991B1B', icon: '●' },
-        Maintenance: { bg: '#F3F4F6', border: '#95A5A6', text: '#4B5563', icon: '🔧' },
-        Cleaning: { bg: '#FEF3C7', border: '#F39C12', text: '#92400E', icon: '🧹' },
+        Available: { bg: '#E8F5E9', border: '#27AE60', text: '#166534' },
+        Occupied: { bg: '#FEE2E2', border: '#DC2626', text: '#991B1B' },
+        Maintenance: { bg: '#F3F4F6', border: '#95A5A6', text: '#4B5563' },
+        Cleaning: { bg: '#FEF3C7', border: '#F39C12', text: '#92400E' },
     };
 
     return (
@@ -82,63 +69,43 @@ function RoomsGrid() {
                 borderRadius: 16,
                 padding: 24,
                 boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                marginBottom: 25,
             }}
         >
             {/* Header */}
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 24,
-                    flexWrap: 'wrap',
-                    gap: 16,
-                }}
-            >
-                <div>
-                    <h3
-                        style={{
-                            color: '#0A1E3F',
-                            fontFamily: 'Playfair Display, serif',
-                            fontSize: 20,
-                            margin: 0,
-                            marginBottom: 4,
-                        }}
-                    >
-                       🏨 Room Management [V11-TEST]
-                    </h3>
-                    <div style={{ fontSize: 12, color: '#9CA3AF' }}>
-                        Total {rooms.length} rooms
-                    </div>
+            <div style={{ marginBottom: 20 }}>
+                <h3
+                    style={{
+                        color: '#0A1E3F',
+                        fontFamily: 'Playfair Display, serif',
+                        fontSize: 20,
+                        margin: 0,
+                        marginBottom: 4,
+                    }}
+                >
+                    🏨 Room Management [V-FINAL-2026]
+                </h3>
+                <div style={{ fontSize: 12, color: '#9CA3AF' }}>
+                    Showing {rooms.length} rooms
                 </div>
-
-                {stats && (
-                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                        <StatBadge label="Available" value={stats.available} color="#27AE60" />
-                        <StatBadge label="Occupied" value={stats.occupied} color="#DC2626" />
-                        <StatBadge label="Cleaning" value={stats.cleaning} color="#F39C12" />
-                        <StatBadge label="Maintenance" value={stats.maintenance} color="#95A5A6" />
-                    </div>
-                )}
             </div>
 
-            {/* Debug Info */}
-            <div
-                style={{
-                    padding: '8px 12px',
-                    background: '#F0F9FF',
-                    border: '1px solid #BAE6FD',
-                    borderRadius: 8,
-                    marginBottom: 16,
-                    fontSize: 11,
-                    color: '#0369A1',
-                    fontFamily: 'monospace',
-                    wordBreak: 'break-all',
-                }}
-            >
-                🔍 {debugInfo}
-            </div>
+            {/* Stats */}
+            {stats && (
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: 12,
+                        marginBottom: 20,
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    <Badge label="Total" value={rooms.length} color="#0A1E3F" />
+                    <Badge label="Available" value={stats.available} color="#27AE60" />
+                    <Badge label="Occupied" value={stats.occupied} color="#DC2626" />
+                    <Badge label="Cleaning" value={stats.cleaning} color="#F39C12" />
+                    <Badge label="Maintenance" value={stats.maintenance} color="#95A5A6" />
+                </div>
+            )}
 
             {/* Loading */}
             {loading && (
@@ -148,21 +115,7 @@ function RoomsGrid() {
             )}
 
             {/* Rooms Grid */}
-            {!loading && rooms.length === 0 && (
-                <div
-                    style={{
-                        textAlign: 'center',
-                        padding: 40,
-                        color: '#DC2626',
-                        background: '#FEF2F2',
-                        borderRadius: 12,
-                    }}
-                >
-                    ❌ No rooms loaded. Check console for details.
-                </div>
-            )}
-
-            {!loading && rooms.length > 0 && (
+            {!loading && (
                 <div
                     style={{
                         display: 'grid',
@@ -174,7 +127,7 @@ function RoomsGrid() {
                         <RoomCell
                             key={room._id}
                             room={room}
-                            color={colors[room.status] || colors['Available']}
+                            color={colors[room.status] || colors.Available}
                             onStatusChange={handleStatusChange}
                             onPriceUpdate={handlePriceUpdate}
                         />
@@ -185,9 +138,6 @@ function RoomsGrid() {
     );
 }
 
-// ═══════════════════════════════════════════════
-// ROOM CELL
-// ═══════════════════════════════════════════════
 function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
     const [editingPrice, setEditingPrice] = useState(false);
     const [priceInput, setPriceInput] = useState(room.pricePerNight || 1500);
@@ -195,21 +145,12 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
 
     const handleSave = async () => {
         const num = Number(priceInput);
-        if (!num || num < 100) {
-            return toast.error('Minimum ₹100 price daalein');
+        if (!num || num < 100 || num > 100000) {
+            return toast.error('Price must be ₹100 - ₹100000');
         }
-        if (num > 100000) {
-            return toast.error('Maximum ₹100000 price');
-        }
-
         setSaving(true);
         await onPriceUpdate(room._id, num);
         setSaving(false);
-        setEditingPrice(false);
-    };
-
-    const handleCancel = () => {
-        setPriceInput(room.pricePerNight || 1500);
         setEditingPrice(false);
     };
 
@@ -244,7 +185,7 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                     textTransform: 'uppercase',
                 }}
             >
-                {color.icon} {room.status}
+                {room.status}
             </div>
 
             {!editingPrice ? (
@@ -260,24 +201,12 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                         borderRadius: 8,
                     }}
                 >
-                    <span
-                        style={{
-                            fontSize: 15,
-                            fontWeight: 800,
-                            color: '#0A1E3F',
-                            fontFamily: 'Playfair Display, serif',
-                        }}
-                    >
-                        ₹{room.pricePerNight || 1500}
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#0A1E3F' }}>
+                        ₹{room.pricePerNight}
                     </span>
-                    <span style={{ fontSize: 9, color: '#6C757D' }}>/night</span>
                     <button
-                        onClick={() => {
-                            setPriceInput(room.pricePerNight || 1500);
-                            setEditingPrice(true);
-                        }}
+                        onClick={() => setEditingPrice(true)}
                         style={{
-                            marginLeft: 4,
                             background: '#FEF3C7',
                             border: '1px solid #F59E0B',
                             borderRadius: 6,
@@ -303,8 +232,6 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                             border: '1.5px solid #D4AF37',
                             borderRadius: 6,
                             fontSize: 13,
-                            fontWeight: 700,
-                            outline: 'none',
                             textAlign: 'center',
                         }}
                     />
@@ -317,24 +244,19 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                             color: '#fff',
                             border: 'none',
                             borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 800,
-                            cursor: saving ? 'not-allowed' : 'pointer',
+                            cursor: 'pointer',
                         }}
                     >
-                        {saving ? '...' : '✓'}
+                        ✓
                     </button>
                     <button
-                        onClick={handleCancel}
-                        disabled={saving}
+                        onClick={() => setEditingPrice(false)}
                         style={{
                             padding: '4px 8px',
                             background: '#F3F4F6',
                             color: '#6B7280',
                             border: 'none',
                             borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 800,
                             cursor: 'pointer',
                         }}
                     >
@@ -349,13 +271,12 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
                 style={{
                     width: '100%',
                     fontSize: 11,
-                    padding: '5px',
+                    padding: 5,
                     borderRadius: 6,
                     border: '1px solid #ddd',
                     background: 'white',
                     cursor: 'pointer',
                     fontWeight: 600,
-                    color: '#0A1E3F',
                 }}
             >
                 <option value="Available">Available</option>
@@ -367,7 +288,7 @@ function RoomCell({ room, color, onStatusChange, onPriceUpdate }) {
     );
 }
 
-function StatBadge({ label, value, color }) {
+function Badge({ label, value, color }) {
     return (
         <div
             style={{
