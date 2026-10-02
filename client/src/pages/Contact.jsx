@@ -97,8 +97,8 @@ function Contact() {
                             icon="✉️"
                             title="Email Us"
                             lines={[
-                                settings?.contact?.email1 || 'info@siyarampace.in',
-                                settings?.contact?.email2 || 'booking@siyarampace.in',
+                                settings?.contact?.email1 || '',
+                                settings?.contact?.email2 || '',
                             ]}
                         />
                         <ContactCard
