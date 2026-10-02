@@ -1,59 +1,90 @@
- 
+// ============================================
+// INITIALIZE ROOMS
+// 12 Deluxe Rooms
+// Ground: 201-205 (5) | 1st Floor: 206-212 (7)
+// ============================================
+
 const Room = require('../models/Room');
 
-async function initializeRooms() {
+const initializeRooms = async () => {
     try {
-        const count = await Room.countDocuments();
-        if (count >= 12) {
-            console.log(`${count} rooms already exist`);
+        const existingCount = await Room.countDocuments();
+
+        if (existingCount > 0) {
+            console.log(`ℹ️ ${existingCount} rooms already exist — skipping init`);
             return;
         }
 
-        await Room.deleteMany({});
-        console.log('Cleared old rooms');
+        // Default amenities
+        const defaultAmenities = {
+            ac: true,
+            wifi: true,
+            attachedBathroom: true,
+            tv: true,
+            hotWater: true,
+            roomService: true,
+            dailyCleaning: true,
+            powerBackup: true,
+            // breakfast: true,
+            parking: true,
+        };
 
-        const rooms = [];
+        // ============================================
         // GROUND FLOOR (5 rooms: 201-205)
+        // ============================================
+        const groundFloorRooms = [];
         for (let i = 1; i <= 5; i++) {
-            rooms.push({
-                roomNumber: '1' + String(i).padStart(2, '0'),
+            groundFloorRooms.push({
+                roomNumber: `20${i}`,       // 201, 202, 203, 204, 205
+                roomType: 'Deluxe Room',
+                floor: 0,
+                pricePerNight: 1500,
+                maxGuests: 4,
+                bedType: 'Double Bed',
+                roomSize: 28,
+                // view: '',                    // No view
+                description: 'Modern, spacious room with premium amenities.',
+                images: [],
+                amenities: defaultAmenities,
+                status: 'Available',
+                isActive: true,
+            });
+        }
+
+        // ============================================
+        // FIRST FLOOR (7 rooms: 206-212)
+        // ============================================
+        const firstFloorRooms = [];
+        for (let i = 6; i <= 12; i++) {
+            firstFloorRooms.push({
+                roomNumber: `20${i}`,       // 206, 207, 208, ..., 212
                 roomType: 'Deluxe Room',
                 floor: 1,
                 pricePerNight: 1500,
-                maxGuests: 2,
+                maxGuests: 4,
                 bedType: 'Double Bed',
                 roomSize: 28,
-                view: i <= 3 ? 'City View' : 'Garden View',
-                status: 'Available'
-            });
-        }
-        // FIRST FLOOR (7 rooms: 206-212
-        for (let i = 1; i <= 7; i++) {
-            rooms.push({
-                roomNumber: '2' + String(i).padStart(2, '0'),
-                roomType: 'Executive Suite',
-                floor: 2,
-                pricePerNight: 2500,
-                maxGuests: 3,
-                bedType: i % 2 === 0 ? 'Twin Bed' : 'King Bed',
-                roomSize: 35,
-                view: 'City View',
+                // view: '',                    // No view
+                description: 'Modern, spacious room with premium amenities.',
+                images: [],
+                amenities: defaultAmenities,
                 status: 'Available',
-                amenities: {
-                    ac: true, wifi: true, attachedBathroom: true, tv: true,
-                    hotWater: true, roomService: true, dailyCleaning: true,
-                    powerBackup: true, breakfast: true, parking: true
-                }
+                isActive: true,
             });
         }
 
-        await Room.insertMany(rooms);
-        console.log(`${rooms.length} rooms created successfully!`);
-        console.log(`   Ground Floor: 5 Deluxe Rooms (Rs 1500/night)`);
-        console.log(`   First Floor: 7  Deluxe Rooms (Rs 1500/night)`);
-        } catch (error) {
-        console.error('Room init error:', error.message);
+        const allRooms = [...groundFloorRooms, ...firstFloorRooms];
+
+        await Room.insertMany(allRooms);
+
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✅ 12 Deluxe Rooms created:');
+        console.log('   Ground Floor: 5 rooms (201-205)');
+        console.log('   First Floor: 7 rooms (206-212)');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    } catch (error) {
+        console.error('❌ Room initialization failed:', error.message);
     }
-}
+};
 
 module.exports = initializeRooms;
