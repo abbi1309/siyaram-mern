@@ -3,12 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import DummyPaymentModal from '../components/DummyPaymentModal';
 import BookingCalendar from '../components/BookingCalendar';
 import { getRoomById } from '../api/rooms';
-import { createBooking } from '../api/bookings';
 import { useAuth } from '../context/AuthContext';
-import { startPayment } from '../utils/payment';
 import toast from 'react-hot-toast';
 
 // Backend URL
@@ -29,9 +26,8 @@ function Booking() {
 
     const [bookedDates, setBookedDates] = useState([]);
 
-    // 👇 Dummy payment modal ke liye 2 nayi states
-    const [showDummyModal, setShowDummyModal] = useState(false);
-    const [dummyPaymentData, setDummyPaymentData] = useState(null);
+    // 👇 Settings (admin WhatsApp number ke liye)
+    const [settings, setSettings] = useState(null);
 
     // 👇👇👇 COUPON STATE
     const [couponCode, setCouponCode] = useState('');
@@ -52,6 +48,7 @@ function Booking() {
         }
 
         loadRoom();
+        loadSettings();
 
         const today = new Date();
         const tomorrow = new Date(today);
@@ -72,7 +69,7 @@ function Booking() {
             try {
                 const token = localStorage.getItem('token');
                 const res = await axios.get(
-                    `/api/bookings/room/${roomId}/booked-dates`,
+                    `${API}/api/bookings/room/${roomId}/booked-dates`,
                     {
                         headers: { Authorization: `Bearer ${token}` },
                     }
@@ -91,7 +88,6 @@ function Booking() {
 
     // ============================================
     // 👇 FETCH APPLICABLE COUPONS (Zepto-style)
-    // Booking amount ke hisaab se list
     // ============================================
     useEffect(() => {
         if (!room || !checkIn || !checkOut) return;
@@ -100,7 +96,6 @@ function Booking() {
             setCouponsLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                // 👇 DYNAMIC: room ka price use karo, hardcoded nahi
                 const priceLocal = room.pricePerNight || 1500;
                 const nightsLocal = Math.max(
                     1,
@@ -134,6 +129,18 @@ function Booking() {
         fetchApplicable();
     }, [room, checkIn, checkOut]);
 
+    // 👇 Settings load karo (admin WhatsApp number ke liye)
+    const loadSettings = async () => {
+        try {
+            const res = await axios.get(`${API}/api/settings`);
+            if (res.data.success) {
+                setSettings(res.data.settings);
+            }
+        } catch (err) {
+            console.error('Settings load failed:', err);
+        }
+    };
+
     const loadRoom = async () => {
         try {
             const data = await getRoomById(roomId);
@@ -157,7 +164,7 @@ function Booking() {
 
     const subtotal = nights * room.pricePerNight;
 
-    // 👇 DYNAMIC: room ka price use karo (admin change kar sakta hai)
+    // 👇 DYNAMIC: room ka price use karo
     const pricePerNight = room.pricePerNight || 1500;
     const totalAmount = pricePerNight * nights;
 
@@ -257,8 +264,12 @@ function Booking() {
         toast.success('Coupon removed');
     };
 
-    const handleBooking = async () => {
-        // 👇 Pehle overlap check
+    // ============================================
+    // 👇 WHATSAPP BOOKING HANDLER
+    // Admin ke WhatsApp pe saari details bhejta hai
+    // ============================================
+    const handleWhatsAppBooking = () => {
+        // 👇 Overlap check
         if (hasOverlapInRange()) {
             return toast.error(
                 '❌ Ye room in dates ke liye already booked hai. Dusri dates choose karein.'
@@ -269,72 +280,61 @@ function Booking() {
             return toast.error('Enter 10 digit phone number');
         }
 
-        setLoading(true);
-        try {
-            const data = await createBooking({
-                roomId,
-                checkIn,
-                checkOut,
-                guests: Number(guests),
-                specialRequests,
-                guestPhone: phone,
-                totalAmount: finalAmount,
-                couponCode: appliedCoupon?.code || null,
-                discountAmount: discountAmount,
-            });
-
-            if (!data.success) {
-                throw new Error(data.message || 'Booking failed');
-            }
-
-            const booking = data.booking || data.data || data;
-
-            await startPayment({
-                amount: finalAmount,
-                bookingId: booking._id,
-                user,
-
-                onDummyPayment: (info) => {
-                    setDummyPaymentData(info);
-                    setShowDummyModal(true);
-                    setLoading(false);
-                },
-
-                onSuccess: () => {
-                    setShowDummyModal(false);
-                    setDummyPaymentData(null);
-                    toast.success('Payment successful! 🎉');
-
-                    const msg =
-                        `Nayi Booking! %0A` +
-                        `*Guest:* ${user.name}%0A` +
-                        `*Room:* ${room.roomNumber}%0A` +
-                        `*Nights:* ${nights}%0A` +
-                        `*Total:* Rs ${finalAmount}` +
-                        (appliedCoupon
-                            ? `%0A*Coupon:* ${appliedCoupon.code} (-Rs ${discountAmount})`
-                            : '');
-                    window.open(
-                        `https://wa.me/919315377668?text=${msg}`,
-                        '_blank'
-                    );
-
-                    navigate('/my-bookings');
-                },
-
-                onFailure: (err) => {
-                    setShowDummyModal(false);
-                    setDummyPaymentData(null);
-                    toast.error(err.message || 'Payment failed');
-                },
-            });
-        } catch (e) {
-            console.error(e);
-            toast.error(
-                e.response?.data?.message || e.message || 'Booking failed'
-            );
-            setLoading(false);
+        if (!checkIn || !checkOut) {
+            return toast.error('Please select dates');
         }
+
+        // 👇 Admin ka WhatsApp number (settings se lo, warna fallback)
+        const rawNumber =
+            settings?.contact?.phone1 ||
+            settings?.phone ||
+            '9315377668';
+        const adminNumber = rawNumber.replace(/[^0-9]/g, '');
+
+        // 👇 Date format (dd-mm-yyyy)
+        const formatDate = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+
+        // 👇 WhatsApp message banao
+        const message =
+            `🏨 *New Booking Request*\n` +
+            `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `👤 *Name:* ${user?.name || 'N/A'}\n` +
+            `📧 *Email:* ${user?.email || 'N/A'}\n` +
+            `📞 *Phone:* ${phone}\n\n` +
+            `🛏️ *Room:* ${room.roomType} (Room ${room.roomNumber})\n` +
+            `📍 *Floor:* ${room.floor === 0 ? 'Ground Floor' : 'First Floor'}\n\n` +
+            `📅 *Check-In:* ${formatDate(checkIn)}\n` +
+            `📅 *Check-Out:* ${formatDate(checkOut)}\n` +
+            `🌙 *Nights:* ${nights}\n` +
+            `👥 *Guests:* ${guests}\n\n` +
+            `💰 *Price/Night:* ₹${pricePerNight}\n` +
+            (discountAmount > 0
+                ? `🎁 *Discount:* -₹${discountAmount} (${appliedCoupon?.code})\n`
+                : '') +
+            `💵 *Total Amount:* ₹${finalAmount}\n\n` +
+            `💬 *Special Requests:*\n${
+                specialRequests ? specialRequests : 'None'
+            }\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━━\n` +
+            `Please confirm my booking. 🙏`;
+
+        // 👇 URL encode
+        const encodedMessage = encodeURIComponent(message);
+
+        // 👇 WhatsApp kholo
+        window.open(
+            `https://wa.me/${adminNumber}?text=${encodedMessage}`,
+            '_blank'
+        );
+
+        toast.success('WhatsApp khul raha hai... Please send the message to confirm.');
     };
 
     return (
@@ -351,7 +351,7 @@ function Booking() {
                         marginBottom: 40,
                     }}
                 >
-                    Please review your details and proceed
+                    Please review your details and confirm on WhatsApp
                 </p>
 
                 <div
@@ -550,7 +550,6 @@ function Booking() {
                                     marginBottom: 8,
                                 }}
                             >
-                                {/* 👇 DYNAMIC PRICE */}
                                 <span>
                                     ₹{pricePerNight} × {nights} night
                                     {nights > 1 ? 's' : ''}
@@ -580,9 +579,7 @@ function Booking() {
                             </div>
                         </div>
 
-                        {/* ═══════════════════════════════════════════
-                            COUPON SECTION — Zepto/Blinkit Style
-                        ═══════════════════════════════════════════ */}
+                        {/* ═══ COUPON SECTION ═══ */}
                         <div
                             style={{
                                 marginBottom: 16,
@@ -590,7 +587,6 @@ function Booking() {
                                 borderBottom: '1px dashed #E5E7EB',
                             }}
                         >
-                            {/* Header */}
                             <div
                                 style={{
                                     display: 'flex',
@@ -650,7 +646,6 @@ function Booking() {
                                 )}
                             </div>
 
-                            {/* Loading */}
                             {couponsLoading && (
                                 <div
                                     style={{
@@ -664,7 +659,6 @@ function Booking() {
                                 </div>
                             )}
 
-                            {/* Empty */}
                             {!couponsLoading &&
                                 availableCoupons.length === 0 && (
                                     <div
@@ -681,7 +675,6 @@ function Booking() {
                                     </div>
                                 )}
 
-                            {/* Coupon List */}
                             {!couponsLoading &&
                                 availableCoupons.length > 0 && (
                                     <div
@@ -724,7 +717,6 @@ function Booking() {
                                                                 : 0.55,
                                                     }}
                                                 >
-                                                    {/* Left — code + desc */}
                                                     <div
                                                         style={{
                                                             flex: 1,
@@ -799,7 +791,6 @@ function Booking() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Right — action */}
                                                     {isApplied ? (
                                                         <button
                                                             onClick={
@@ -872,7 +863,6 @@ function Booking() {
                                     </div>
                                 )}
 
-                            {/* Manual code — collapsible */}
                             <details
                                 style={{
                                     marginTop: 12,
@@ -949,7 +939,7 @@ function Booking() {
                             </details>
                         </div>
 
-                        {/* ═══════════ TOTAL WITH DISCOUNT ═══════════ */}
+                        {/* ═══ TOTAL WITH DISCOUNT ═══ */}
                         {discountAmount > 0 && (
                             <>
                                 <div
@@ -1002,7 +992,7 @@ function Booking() {
                             <span>₹{finalAmount}</span>
                         </div>
 
-                        {/* 👇 Overlap warning button ke upar */}
+                        {/* 👇 Overlap warning */}
                         {hasOverlapInRange() && (
                             <div
                                 style={{
@@ -1023,21 +1013,35 @@ function Booking() {
                             </div>
                         )}
 
+                        {/* 👇 WHATSAPP BOOKING BUTTON */}
                         <button
                             className="btn btn-primary btn-block btn-lg"
-                            onClick={handleBooking}
-                            disabled={
-                                loading ||
-                                showDummyModal ||
-                                hasOverlapInRange()
-                            }
-                            style={{ marginTop: 16 }}
+                            onClick={handleWhatsAppBooking}
+                            disabled={loading || hasOverlapInRange()}
+                            style={{
+                                marginTop: 16,
+                                background:
+                                    'linear-gradient(135deg, #25D366, #128C7E)',
+                                color: 'white',
+                                border: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 10,
+                                fontWeight: 700,
+                            }}
                         >
-                            {loading
-                                ? 'Processing...'
-                                : hasOverlapInRange()
+                            <svg
+                                width="22"
+                                height="22"
+                                viewBox="0 0 24 24"
+                                fill="white"
+                            >
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                            </svg>
+                            {hasOverlapInRange()
                                 ? '❌ Dates Booked'
-                                : `💳 Proceed to Payment ₹${finalAmount}`}
+                                : 'Confirm Booking on WhatsApp'}
                         </button>
                         <p
                             style={{
@@ -1047,21 +1051,12 @@ function Booking() {
                                 marginTop: 15,
                             }}
                         >
-                            🔒 Secure & encrypted
+                            🔒 You will be redirected to WhatsApp to confirm
+                            your booking
                         </p>
                     </aside>
                 </div>
             </div>
-
-            {/* 👇 Dummy Payment Modal */}
-            <DummyPaymentModal
-                open={showDummyModal}
-                data={dummyPaymentData}
-                onClose={() => {
-                    setShowDummyModal(false);
-                    setDummyPaymentData(null);
-                }}
-            />
 
             <Footer />
         </>
