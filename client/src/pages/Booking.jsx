@@ -266,10 +266,12 @@ function Booking() {
 
     // ============================================
     // 👇 WHATSAPP BOOKING HANDLER
-    // WhatsApp TURANT khule + Backend parallel me save ho
+    // WhatsApp TURANT khule + Backend parallel save ho
     // ============================================
-    const handleWhatsAppBooking = async () => {
-        // 👇 Overlap check
+    const handleWhatsAppBooking = () => {
+        // ----------------------------------------
+        // 1. VALIDATIONS
+        // ----------------------------------------
         if (hasOverlapInRange()) {
             return toast.error(
                 '❌ Ye room in dates ke liye already booked hai. Dusri dates choose karein.'
@@ -284,11 +286,9 @@ function Booking() {
             return toast.error('Please select dates');
         }
 
-        setLoading(true);
-
-        // ============================================
-        // STEP 1: ADMIN NUMBER NIKALO
-        // ============================================
+        // ----------------------------------------
+        // 2. ADMIN NUMBER NIKALO
+        // ----------------------------------------
         const rawNumber =
             settings?.contact?.phone1 ||
             settings?.phone ||
@@ -304,9 +304,9 @@ function Booking() {
             return `${day}-${month}-${year}`;
         };
 
-        // ============================================
-        // STEP 2: WHATSAPP MESSAGE BANAO (user details se)
-        // ============================================
+        // ----------------------------------------
+        // 3. WHATSAPP MESSAGE BANAO
+        // ----------------------------------------
         const message =
             `🏨 *New Booking Request*\n` +
             `━━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -333,7 +333,8 @@ function Booking() {
         const encodedMessage = encodeURIComponent(message);
 
         // ============================================
-        // STEP 3: WHATSAPP TURANT KHOLO (INSTANT)
+        // 4. WHATSAPP TURANT KHOLO (0 SECOND WAIT)
+        //    Ye sabse pehle, synchronous — turant khulega
         // ============================================
         window.open(
             `https://wa.me/${adminNumber}?text=${encodedMessage}`,
@@ -343,47 +344,45 @@ function Booking() {
         toast.success('✅ WhatsApp khul gaya! Message bhejein.');
 
         // ============================================
-        // STEP 4: BACKGROUND ME BOOKING SAVE KARO
-        // (User WhatsApp pe message bhej raha hoga, tab ye parallel chalega)
+        // 5. BACKGROUND ME BOOKING SAVE KARO
+        //    Ye ek alag thread jaisa — user WhatsApp pe
+        //    baat kar raha hoga, tab ye save hogi
         // ============================================
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(
-                `${API}/api/bookings`,
-                {
-                    roomId: room._id,
-                    checkIn,
-                    checkOut,
-                    guests: Number(guests),
-                    specialRequests: specialRequests || '',
-                    guestPhone: phone,
-                    couponCode: appliedCoupon?.code || null,
-                    discountAmount: discountAmount || 0,
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
+        (async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.post(
+                    `${API}/api/bookings`,
+                    {
+                        roomId: room._id,
+                        checkIn,
+                        checkOut,
+                        guests: Number(guests),
+                        specialRequests: specialRequests || '',
+                        guestPhone: phone,
+                        couponCode: appliedCoupon?.code || null,
+                        discountAmount: discountAmount || 0,
+                    },
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+
+                if (res.data.success) {
+                    console.log('✅ Booking DB me save ho gayi:', res.data.booking);
                 }
-            );
-
-            if (res.data.success) {
-                console.log('✅ Booking saved to DB:', res.data.booking);
-            } else {
-                console.error('Booking save failed:', res.data.message);
+            } catch (err) {
+                console.error('❌ Background booking save failed:', err);
+                // Silent fail — WhatsApp pe message jaa chuka hai
             }
-        } catch (err) {
-            console.error('Background booking save failed:', err);
-            // Silent fail — user ko WhatsApp pe message ja chuka hai
-            // Admin manually WhatsApp se handle kar lega
-        } finally {
-            setLoading(false);
+        })();
 
-            // ============================================
-            // STEP 5: MY BOOKINGS PAGE PE REDIRECT
-            // ============================================
-            setTimeout(() => {
-                navigate('/my-bookings');
-            }, 2000);
-        }
+        // ============================================
+        // 6. 2 SECOND BAAD MY BOOKINGS PAGE PE REDIRECT
+        // ============================================
+        setTimeout(() => {
+            navigate('/my-bookings');
+        }, 2000);
     };
 
     return (
