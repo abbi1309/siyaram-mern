@@ -26,16 +26,16 @@ function Booking() {
 
     const [bookedDates, setBookedDates] = useState([]);
 
-    // 👇 Settings (admin WhatsApp number ke liye)
+    // Settings (admin WhatsApp number ke liye)
     const [settings, setSettings] = useState(null);
 
-    // 👇👇👇 COUPON STATE
+    // COUPON STATE
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponLoading, setCouponLoading] = useState(false);
     const [discountAmount, setDiscountAmount] = useState(0);
 
-    // 👇👇👇 ZEPTO-STYLE COUPON LIST STATE
+    // ZEPTO-STYLE COUPON LIST STATE
     const [availableCoupons, setAvailableCoupons] = useState([]);
     const [showAllCoupons, setShowAllCoupons] = useState(false);
     const [couponsLoading, setCouponsLoading] = useState(false);
@@ -61,7 +61,7 @@ function Booking() {
         setPhone(user?.phone || '');
     }, [roomId, isLoggedIn]);
 
-    // 👇 Booked dates fetch karo
+    // Booked dates fetch karo
     useEffect(() => {
         if (!roomId || !isLoggedIn) return;
 
@@ -75,7 +75,6 @@ function Booking() {
                     }
                 );
                 if (res.data.success) {
-                    console.log('📅 Booked dates from API:', res.data.bookedDates);
                     setBookedDates(res.data.bookedDates);
                 }
             } catch (err) {
@@ -86,9 +85,7 @@ function Booking() {
         fetchBookedDates();
     }, [roomId, isLoggedIn]);
 
-    // ============================================
-    // 👇 FETCH APPLICABLE COUPONS (Zepto-style)
-    // ============================================
+    // FETCH APPLICABLE COUPONS
     useEffect(() => {
         if (!room || !checkIn || !checkOut) return;
 
@@ -129,7 +126,6 @@ function Booking() {
         fetchApplicable();
     }, [room, checkIn, checkOut]);
 
-    // 👇 Settings load karo (admin WhatsApp number ke liye)
     const loadSettings = async () => {
         try {
             const res = await axios.get(`${API}/api/settings`);
@@ -162,19 +158,12 @@ function Booking() {
         )
     );
 
-    const subtotal = nights * room.pricePerNight;
-
-    // 👇 DYNAMIC: room ka price use karo
     const pricePerNight = room.pricePerNight || 1500;
     const totalAmount = pricePerNight * nights;
-
-    // 👇 FINAL AMOUNT (discount ke baad)
     const finalAmount = Math.max(0, totalAmount - discountAmount);
 
-    // 👇 Helper — check karo range me koi booked date hai ya nahi
     const hasOverlapInRange = () => {
         if (!checkIn || !checkOut) return false;
-
         const start = new Date(checkIn);
         const end = new Date(checkOut);
         start.setHours(0, 0, 0, 0);
@@ -187,12 +176,10 @@ function Booking() {
         });
     };
 
-    // 👇 Manual coupon apply
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) {
             return toast.error('Coupon code daalein');
         }
-
         setCouponLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -204,20 +191,15 @@ function Booking() {
                     nights: nights,
                     roomType: room.roomType,
                 },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
-
             if (res.data.success) {
                 setAppliedCoupon(res.data.coupon);
                 setDiscountAmount(res.data.discountAmount);
                 toast.success(res.data.message);
             }
         } catch (err) {
-            toast.error(
-                err.response?.data?.message || 'Coupon apply failed'
-            );
+            toast.error(err.response?.data?.message || 'Coupon apply failed');
             setAppliedCoupon(null);
             setDiscountAmount(0);
         } finally {
@@ -225,7 +207,6 @@ function Booking() {
         }
     };
 
-    // 👇 One-click apply from list
     const handleQuickApply = async (code) => {
         setCouponCode(code);
         setCouponLoading(true);
@@ -241,22 +222,18 @@ function Booking() {
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-
             if (res.data.success) {
                 setAppliedCoupon(res.data.coupon);
                 setDiscountAmount(res.data.discountAmount);
                 toast.success(res.data.message);
             }
         } catch (err) {
-            toast.error(
-                err.response?.data?.message || 'Apply failed'
-            );
+            toast.error(err.response?.data?.message || 'Apply failed');
         } finally {
             setCouponLoading(false);
         }
     };
 
-    // 👇 Remove coupon
     const handleRemoveCoupon = () => {
         setAppliedCoupon(null);
         setDiscountAmount(0);
@@ -265,16 +242,15 @@ function Booking() {
     };
 
     // ============================================
-    // 👇 WHATSAPP BOOKING HANDLER
-    // WhatsApp TURANT khule + Backend parallel save ho
+    // WHATSAPP BOOKING HANDLER
+    // Same tab me WhatsApp kholta hai — instant, koi blank tab nahi
+    // Background me booking save hoti hai
     // ============================================
     const handleWhatsAppBooking = () => {
-        // ----------------------------------------
         // 1. VALIDATIONS
-        // ----------------------------------------
         if (hasOverlapInRange()) {
             return toast.error(
-                '❌ Ye room in dates ke liye already booked hai. Dusri dates choose karein.'
+                'Ye room in dates ke liye already booked hai. Dusri dates choose karein.'
             );
         }
 
@@ -286,9 +262,7 @@ function Booking() {
             return toast.error('Please select dates');
         }
 
-        // ----------------------------------------
-        // 2. ADMIN NUMBER NIKALO
-        // ----------------------------------------
+        // 2. ADMIN NUMBER
         const rawNumber =
             settings?.contact?.phone1 ||
             settings?.phone ||
@@ -304,85 +278,68 @@ function Booking() {
             return `${day}-${month}-${year}`;
         };
 
-        // ----------------------------------------
-        // 3. WHATSAPP MESSAGE BANAO
-        // ----------------------------------------
+        // 3. WHATSAPP MESSAGE
         const message =
-            `🏨 *New Booking Request*\n` +
-            `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `👤 *Name:* ${user?.name || 'N/A'}\n` +
-            `📧 *Email:* ${user?.email || 'N/A'}\n` +
-            `📞 *Phone:* ${phone}\n\n` +
-            `🛏️ *Room:* ${room.roomType} (Room ${room.roomNumber})\n` +
-            `📍 *Floor:* ${room.floor === 0 ? 'Ground Floor' : 'First Floor'}\n\n` +
-            `📅 *Check-In:* ${formatDate(checkIn)}\n` +
-            `📅 *Check-Out:* ${formatDate(checkOut)}\n` +
-            `🌙 *Nights:* ${nights}\n` +
-            `👥 *Guests:* ${guests}\n\n` +
-            `💰 *Price/Night:* ₹${pricePerNight}\n` +
+            `New Booking Request\n` +
+            `-------------------\n\n` +
+            `Name: ${user?.name || 'N/A'}\n` +
+            `Email: ${user?.email || 'N/A'}\n` +
+            `Phone: ${phone}\n\n` +
+            `Room: ${room.roomType} (Room ${room.roomNumber})\n` +
+            `Floor: ${room.floor === 0 ? 'Ground Floor' : 'First Floor'}\n\n` +
+            `Check-In: ${formatDate(checkIn)}\n` +
+            `Check-Out: ${formatDate(checkOut)}\n` +
+            `Nights: ${nights}\n` +
+            `Guests: ${guests}\n\n` +
+            `Price/Night: Rs.${pricePerNight}\n` +
             (discountAmount > 0
-                ? `🎁 *Discount:* -₹${discountAmount} (${appliedCoupon?.code})\n`
+                ? `Discount: -Rs.${discountAmount} (${appliedCoupon?.code})\n`
                 : '') +
-            `💵 *Total Amount:* ₹${finalAmount}\n\n` +
-            `💬 *Special Requests:*\n${
+            `Total Amount: Rs.${finalAmount}\n\n` +
+            `Special Requests:\n${
                 specialRequests ? specialRequests : 'None'
             }\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Please confirm my booking. 🙏`;
+            `-------------------\n` +
+            `Please confirm my booking.`;
 
         const encodedMessage = encodeURIComponent(message);
+        const whatsappURL = `https://wa.me/${adminNumber}?text=${encodedMessage}`;
 
         // ============================================
-        // 4. WHATSAPP TURANT KHOLO (0 SECOND WAIT)
-        //    Ye sabse pehle, synchronous — turant khulega
+        // 4. BACKGROUND ME BOOKING SAVE KARO
+        //    (Same tab me WhatsApp jaane se PEHLE start karo)
         // ============================================
-        window.open(
-            `https://wa.me/${adminNumber}?text=${encodedMessage}`,
-            '_blank'
-        );
-
-        toast.success('✅ WhatsApp khul gaya! Message bhejein.');
-
-        // ============================================
-        // 5. BACKGROUND ME BOOKING SAVE KARO
-        //    Ye ek alag thread jaisa — user WhatsApp pe
-        //    baat kar raha hoga, tab ye save hogi
-        // ============================================
-        (async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.post(
-                    `${API}/api/bookings`,
-                    {
-                        roomId: room._id,
-                        checkIn,
-                        checkOut,
-                        guests: Number(guests),
-                        specialRequests: specialRequests || '',
-                        guestPhone: phone,
-                        couponCode: appliedCoupon?.code || null,
-                        discountAmount: discountAmount || 0,
-                    },
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
-
+        const token = localStorage.getItem('token');
+        axios
+            .post(
+                `${API}/api/bookings`,
+                {
+                    roomId: room._id,
+                    checkIn,
+                    checkOut,
+                    guests: Number(guests),
+                    specialRequests: specialRequests || '',
+                    guestPhone: phone,
+                    couponCode: appliedCoupon?.code || null,
+                    discountAmount: discountAmount || 0,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .then((res) => {
                 if (res.data.success) {
-                    console.log('✅ Booking DB me save ho gayi:', res.data.booking);
+                    console.log('✅ Booking saved to DB:', res.data.booking);
                 }
-            } catch (err) {
+            })
+            .catch((err) => {
                 console.error('❌ Background booking save failed:', err);
-                // Silent fail — WhatsApp pe message jaa chuka hai
-            }
-        })();
+            });
 
         // ============================================
-        // 6. 2 SECOND BAAD MY BOOKINGS PAGE PE REDIRECT
+        // 5. WHATSAPP SAME TAB ME KHOLO (INSTANT)
+        //    New tab me kholne se blank screen dikhta hai
+        //    Same tab me navigate karne se instant WhatsApp khulta hai
         // ============================================
-        setTimeout(() => {
-            navigate('/my-bookings');
-        }, 2000);
+        window.location.href = whatsappURL;
     };
 
     return (
@@ -410,7 +367,6 @@ function Booking() {
                     }}
                 >
                     <div>
-                        {/* 👇 CALENDAR */}
                         <BookingCalendar
                             bookedDates={bookedDates}
                             checkIn={checkIn}
@@ -439,9 +395,7 @@ function Booking() {
                                 }}
                             >
                                 <div className="form-group">
-                                    <label className="form-label">
-                                        Check-In
-                                    </label>
+                                    <label className="form-label">Check-In</label>
                                     <input
                                         type="date"
                                         className="form-control"
@@ -454,9 +408,7 @@ function Booking() {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">
-                                        Check-Out
-                                    </label>
+                                    <label className="form-label">Check-Out</label>
                                     <input
                                         type="date"
                                         className="form-control"
@@ -473,9 +425,7 @@ function Booking() {
                                     <select
                                         className="form-control"
                                         value={guests}
-                                        onChange={(e) =>
-                                            setGuests(e.target.value)
-                                        }
+                                        onChange={(e) => setGuests(e.target.value)}
                                     >
                                         <option value="1">1 Guest</option>
                                         <option value="2">2 Guests</option>
@@ -492,9 +442,7 @@ function Booking() {
                                         className="form-control"
                                         maxLength={10}
                                         value={phone}
-                                        onChange={(e) =>
-                                            setPhone(e.target.value)
-                                        }
+                                        onChange={(e) => setPhone(e.target.value)}
                                     />
                                 </div>
                             </div>
@@ -627,7 +575,7 @@ function Booking() {
                             </div>
                         </div>
 
-                        {/* ═══ COUPON SECTION ═══ */}
+                        {/* COUPON SECTION */}
                         <div
                             style={{
                                 marginBottom: 16,
@@ -707,209 +655,194 @@ function Booking() {
                                 </div>
                             )}
 
-                            {!couponsLoading &&
-                                availableCoupons.length === 0 && (
-                                    <div
-                                        style={{
-                                            textAlign: 'center',
-                                            padding: 16,
-                                            color: 'var(--text-muted)',
-                                            fontSize: 12,
-                                            background: '#F9FAFB',
-                                            borderRadius: 10,
-                                        }}
-                                    >
-                                        No offers available right now
-                                    </div>
-                                )}
+                            {!couponsLoading && availableCoupons.length === 0 && (
+                                <div
+                                    style={{
+                                        textAlign: 'center',
+                                        padding: 16,
+                                        color: 'var(--text-muted)',
+                                        fontSize: 12,
+                                        background: '#F9FAFB',
+                                        borderRadius: 10,
+                                    }}
+                                >
+                                    No offers available right now
+                                </div>
+                            )}
 
-                            {!couponsLoading &&
-                                availableCoupons.length > 0 && (
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 8,
-                                        }}
-                                    >
-                                        {(showAllCoupons
-                                            ? availableCoupons
-                                            : availableCoupons.slice(0, 3)
-                                        ).map((coupon) => {
-                                            const isApplied =
-                                                appliedCoupon?._id ===
-                                                coupon._id;
+                            {!couponsLoading && availableCoupons.length > 0 && (
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 8,
+                                    }}
+                                >
+                                    {(showAllCoupons
+                                        ? availableCoupons
+                                        : availableCoupons.slice(0, 3)
+                                    ).map((coupon) => {
+                                        const isApplied =
+                                            appliedCoupon?._id === coupon._id;
 
-                                            return (
+                                        return (
+                                            <div
+                                                key={coupon._id}
+                                                style={{
+                                                    background: isApplied
+                                                        ? '#DCFCE7'
+                                                        : '#fff',
+                                                    border: isApplied
+                                                        ? '1.5px solid #22C55E'
+                                                        : coupon.applicable
+                                                        ? '1.5px dashed #E5E7EB'
+                                                        : '1.5px dashed #F3F4F6',
+                                                    borderRadius: 10,
+                                                    padding: '10px 12px',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    gap: 10,
+                                                    opacity: coupon.applicable
+                                                        ? 1
+                                                        : 0.55,
+                                                }}
+                                            >
                                                 <div
-                                                    key={coupon._id}
                                                     style={{
-                                                        background: isApplied
-                                                            ? '#DCFCE7'
-                                                            : '#fff',
-                                                        border: isApplied
-                                                            ? '1.5px solid #22C55E'
-                                                            : coupon.applicable
-                                                            ? '1.5px dashed #E5E7EB'
-                                                            : '1.5px dashed #F3F4F6',
-                                                        borderRadius: 10,
-                                                        padding: '10px 12px',
-                                                        display: 'flex',
-                                                        justifyContent:
-                                                            'space-between',
-                                                        alignItems: 'center',
-                                                        gap: 10,
-                                                        opacity:
-                                                            coupon.applicable
-                                                                ? 1
-                                                                : 0.55,
+                                                        flex: 1,
+                                                        minWidth: 0,
                                                     }}
                                                 >
                                                     <div
                                                         style={{
-                                                            flex: 1,
-                                                            minWidth: 0,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 8,
+                                                            marginBottom: 3,
                                                         }}
                                                     >
-                                                        <div
+                                                        <span
                                                             style={{
-                                                                display: 'flex',
-                                                                alignItems:
-                                                                    'center',
-                                                                gap: 8,
-                                                                marginBottom: 3,
+                                                                fontFamily:
+                                                                    'monospace',
+                                                                fontSize: 12,
+                                                                fontWeight: 800,
+                                                                color: isApplied
+                                                                    ? '#166534'
+                                                                    : 'var(--navy)',
+                                                                letterSpacing:
+                                                                    '0.5px',
                                                             }}
                                                         >
+                                                            {coupon.code}
+                                                        </span>
+                                                        {coupon.discountPreview >
+                                                            0 && (
                                                             <span
                                                                 style={{
-                                                                    fontFamily:
-                                                                        'monospace',
-                                                                    fontSize: 12,
-                                                                    fontWeight: 800,
+                                                                    fontSize: 10,
+                                                                    background:
+                                                                        isApplied
+                                                                            ? '#22C55E'
+                                                                            : '#FEF3C7',
                                                                     color: isApplied
-                                                                        ? '#166534'
-                                                                        : 'var(--navy)',
-                                                                    letterSpacing:
-                                                                        '0.5px',
+                                                                        ? '#fff'
+                                                                        : '#92400E',
+                                                                    padding:
+                                                                        '2px 6px',
+                                                                    borderRadius: 6,
+                                                                    fontWeight: 800,
                                                                 }}
                                                             >
-                                                                {coupon.code}
-                                                            </span>
-                                                            {coupon.discountPreview >
-                                                                0 && (
-                                                                <span
-                                                                    style={{
-                                                                        fontSize: 10,
-                                                                        background:
-                                                                            isApplied
-                                                                                ? '#22C55E'
-                                                                                : '#FEF3C7',
-                                                                        color: isApplied
-                                                                            ? '#fff'
-                                                                            : '#92400E',
-                                                                        padding:
-                                                                            '2px 6px',
-                                                                        borderRadius: 6,
-                                                                        fontWeight: 800,
-                                                                    }}
-                                                                >
-                                                                    Save ₹
-                                                                    {
-                                                                        coupon.discountPreview
-                                                                    }
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div
-                                                            style={{
-                                                                fontSize: 11,
-                                                                color: 'var(--text-muted)',
-                                                                lineHeight: 1.3,
-                                                                overflow:
-                                                                    'hidden',
-                                                                textOverflow:
-                                                                    'ellipsis',
-                                                                whiteSpace:
-                                                                    'nowrap',
-                                                            }}
-                                                        >
-                                                            {coupon.applicable
-                                                                ? coupon.description
-                                                                : `❌ ${coupon.reason}`}
-                                                        </div>
-                                                    </div>
-
-                                                    {isApplied ? (
-                                                        <button
-                                                            onClick={
-                                                                handleRemoveCoupon
-                                                            }
-                                                            style={{
-                                                                padding:
-                                                                    '6px 12px',
-                                                                background:
-                                                                    '#fff',
-                                                                color: '#DC2626',
-                                                                border:
-                                                                    '1px solid #DC2626',
-                                                                borderRadius: 8,
-                                                                fontSize: 10,
-                                                                fontWeight: 800,
-                                                                cursor: 'pointer',
-                                                                whiteSpace:
-                                                                    'nowrap',
-                                                            }}
-                                                        >
-                                                            ✕ REMOVE
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => {
-                                                                if (
-                                                                    !coupon.applicable
-                                                                ) {
-                                                                    return toast.error(
-                                                                        coupon.reason
-                                                                    );
+                                                                Save ₹
+                                                                {
+                                                                    coupon.discountPreview
                                                                 }
-                                                                handleQuickApply(
-                                                                    coupon.code
-                                                                );
-                                                            }}
-                                                            disabled={
-                                                                couponLoading
-                                                            }
-                                                            style={{
-                                                                padding:
-                                                                    '6px 12px',
-                                                                background:
-                                                                    coupon.applicable
-                                                                        ? 'linear-gradient(135deg, #D4AF37, #B8912E)'
-                                                                        : '#F3F4F6',
-                                                                color: coupon.applicable
-                                                                    ? '#fff'
-                                                                    : '#9CA3AF',
-                                                                border: 'none',
-                                                                borderRadius: 8,
-                                                                fontSize: 10,
-                                                                fontWeight: 800,
-                                                                cursor: coupon.applicable
-                                                                    ? 'pointer'
-                                                                    : 'not-allowed',
-                                                                whiteSpace:
-                                                                    'nowrap',
-                                                            }}
-                                                        >
-                                                            {coupon.applicable
-                                                                ? 'APPLY'
-                                                                : 'LOCKED'}
-                                                        </button>
-                                                    )}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: 11,
+                                                            color: 'var(--text-muted)',
+                                                            lineHeight: 1.3,
+                                                            overflow: 'hidden',
+                                                            textOverflow:
+                                                                'ellipsis',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        {coupon.applicable
+                                                            ? coupon.description
+                                                            : `❌ ${coupon.reason}`}
+                                                    </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+
+                                                {isApplied ? (
+                                                    <button
+                                                        onClick={
+                                                            handleRemoveCoupon
+                                                        }
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            background: '#fff',
+                                                            color: '#DC2626',
+                                                            border:
+                                                                '1px solid #DC2626',
+                                                            borderRadius: 8,
+                                                            fontSize: 10,
+                                                            fontWeight: 800,
+                                                            cursor: 'pointer',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        ✕ REMOVE
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (
+                                                                !coupon.applicable
+                                                            ) {
+                                                                return toast.error(
+                                                                    coupon.reason
+                                                                );
+                                                            }
+                                                            handleQuickApply(
+                                                                coupon.code
+                                                            );
+                                                        }}
+                                                        disabled={couponLoading}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            background:
+                                                                coupon.applicable
+                                                                    ? 'linear-gradient(135deg, #D4AF37, #B8912E)'
+                                                                    : '#F3F4F6',
+                                                            color: coupon.applicable
+                                                                ? '#fff'
+                                                                : '#9CA3AF',
+                                                            border: 'none',
+                                                            borderRadius: 8,
+                                                            fontSize: 10,
+                                                            fontWeight: 800,
+                                                            cursor: coupon.applicable
+                                                                ? 'pointer'
+                                                                : 'not-allowed',
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        {coupon.applicable
+                                                            ? 'APPLY'
+                                                            : 'LOCKED'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             <details
                                 style={{
@@ -959,8 +892,7 @@ function Booking() {
                                     <button
                                         onClick={handleApplyCoupon}
                                         disabled={
-                                            couponLoading ||
-                                            !couponCode.trim()
+                                            couponLoading || !couponCode.trim()
                                         }
                                         style={{
                                             padding: '8px 14px',
@@ -987,7 +919,6 @@ function Booking() {
                             </details>
                         </div>
 
-                        {/* ═══ TOTAL WITH DISCOUNT ═══ */}
                         {discountAmount > 0 && (
                             <>
                                 <div
@@ -1040,7 +971,6 @@ function Booking() {
                             <span>₹{finalAmount}</span>
                         </div>
 
-                        {/* 👇 Overlap warning */}
                         {hasOverlapInRange() && (
                             <div
                                 style={{
@@ -1061,7 +991,6 @@ function Booking() {
                             </div>
                         )}
 
-                        {/* 👇 WHATSAPP BOOKING BUTTON */}
                         <button
                             className="btn btn-primary btn-block btn-lg"
                             onClick={handleWhatsAppBooking}
