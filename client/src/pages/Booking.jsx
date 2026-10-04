@@ -266,8 +266,7 @@ function Booking() {
 
     // ============================================
     // 👇 WHATSAPP BOOKING HANDLER
-    // 1. Backend me booking save karta hai (Pending)
-    // 2. Fir WhatsApp pe admin ko bhejta hai
+    // Popup block fix: WhatsApp pehle khule, phir DB save
     // ============================================
     const handleWhatsAppBooking = async () => {
         // 👇 Overlap check
@@ -289,7 +288,45 @@ function Booking() {
 
         try {
             // ============================================
-            // STEP 1: BACKEND ME BOOKING SAVE KARO
+            // STEP 1: ADMIN NUMBER NIKALO
+            // ============================================
+            const rawNumber =
+                settings?.contact?.phone1 ||
+                settings?.phone ||
+                '9315377668';
+            const adminNumber = rawNumber.replace(/[^0-9]/g, '');
+
+            const formatDate = (dateStr) => {
+                if (!dateStr) return 'N/A';
+                const d = new Date(dateStr);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                return `${day}-${month}-${year}`;
+            };
+
+            // ============================================
+            // STEP 2: WHATSAPP WINDOW PEHLE KHOLO
+            // (Ye user click ke turant baad hona chahiye — popup block nahi hoga)
+            // ============================================
+            const whatsappWindow = window.open('', '_blank');
+
+            if (!whatsappWindow) {
+                toast.error('Please allow popups for this site');
+                setLoading(false);
+                return;
+            }
+
+            // Loading message dikhao jab tak backend save ho raha hai
+            whatsappWindow.document.write(
+                '<html><body style="font-family: Arial; padding: 40px; text-align: center;">' +
+                '<h2 style="color: #0A1E3F;">⏳ Booking save ho rahi hai...</h2>' +
+                '<p style="color: #666;">Please wait, WhatsApp shortly khul raha hai.</p>' +
+                '</body></html>'
+            );
+
+            // ============================================
+            // STEP 3: BACKEND ME BOOKING SAVE KARO
             // ============================================
             const token = localStorage.getItem('token');
             const res = await axios.post(
@@ -310,31 +347,15 @@ function Booking() {
             );
 
             if (!res.data.success) {
+                whatsappWindow.close();
                 throw new Error(res.data.message || 'Booking save failed');
             }
 
             console.log('✅ Booking saved to DB:', res.data.booking);
-            toast.success('Booking request bheja gaya ✅');
 
             // ============================================
-            // STEP 2: WHATSAPP MESSAGE BANAO
+            // STEP 4: WHATSAPP MESSAGE BANAO
             // ============================================
-            const rawNumber =
-                settings?.contact?.phone1 ||
-                settings?.phone ||
-                '9315377668';
-            const adminNumber = rawNumber.replace(/[^0-9]/g, '');
-
-            const formatDate = (dateStr) => {
-                if (!dateStr) return 'N/A';
-                const d = new Date(dateStr);
-                const day = String(d.getDate()).padStart(2, '0');
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const year = d.getFullYear();
-                return `${day}-${month}-${year}`;
-            };
-
-            const bookingId = res.data.booking._id;
             const invoiceNumber = res.data.booking.invoiceNumber || 'N/A';
 
             const message =
@@ -364,21 +385,18 @@ function Booking() {
             const encodedMessage = encodeURIComponent(message);
 
             // ============================================
-            // STEP 3: WHATSAPP KHOLO
+            // STEP 5: PEHLE SE KHULI WINDOW KO WHATSAPP PE REDIRECT KARO
             // ============================================
-            window.open(
-                `https://wa.me/${adminNumber}?text=${encodedMessage}`,
-                '_blank'
-            );
+            whatsappWindow.location.href = `https://wa.me/${adminNumber}?text=${encodedMessage}`;
 
-            toast.success('WhatsApp khul raha hai...');
+            toast.success('✅ Booking bhej di gayi! WhatsApp pe confirm karein.');
 
             // ============================================
-            // STEP 4: MY BOOKINGS PAGE PE REDIRECT
+            // STEP 6: MY BOOKINGS PAGE PE REDIRECT
             // ============================================
             setTimeout(() => {
                 navigate('/my-bookings');
-            }, 2000);
+            }, 2500);
         } catch (err) {
             console.error('Booking error:', err);
             toast.error(
