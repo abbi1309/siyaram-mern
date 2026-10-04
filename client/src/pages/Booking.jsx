@@ -266,9 +266,10 @@ function Booking() {
 
     // ============================================
     // 👇 WHATSAPP BOOKING HANDLER
-    // Admin ke WhatsApp pe saari details bhejta hai
+    // 1. Backend me booking save karta hai (Pending)
+    // 2. Fir WhatsApp pe admin ko bhejta hai
     // ============================================
-    const handleWhatsAppBooking = () => {
+    const handleWhatsAppBooking = async () => {
         // 👇 Overlap check
         if (hasOverlapInRange()) {
             return toast.error(
@@ -284,57 +285,110 @@ function Booking() {
             return toast.error('Please select dates');
         }
 
-        // 👇 Admin ka WhatsApp number (settings se lo, warna fallback)
-        const rawNumber =
-            settings?.contact?.phone1 ||
-            settings?.phone ||
-            '9315377668';
-        const adminNumber = rawNumber.replace(/[^0-9]/g, '');
+        setLoading(true);
 
-        // 👇 Date format (dd-mm-yyyy)
-        const formatDate = (dateStr) => {
-            if (!dateStr) return 'N/A';
-            const d = new Date(dateStr);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}-${month}-${year}`;
-        };
+        try {
+            // ============================================
+            // STEP 1: BACKEND ME BOOKING SAVE KARO
+            // ============================================
+            const token = localStorage.getItem('token');
+            const res = await axios.post(
+                `${API}/api/bookings`,
+                {
+                    roomId: room._id,
+                    checkIn,
+                    checkOut,
+                    guests: Number(guests),
+                    specialRequests: specialRequests || '',
+                    guestPhone: phone,
+                    couponCode: appliedCoupon?.code || null,
+                    discountAmount: discountAmount || 0,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
-        // 👇 WhatsApp message banao
-        const message =
-            `🏨 *New Booking Request*\n` +
-            `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `👤 *Name:* ${user?.name || 'N/A'}\n` +
-            `📧 *Email:* ${user?.email || 'N/A'}\n` +
-            `📞 *Phone:* ${phone}\n\n` +
-            `🛏️ *Room:* ${room.roomType} (Room ${room.roomNumber})\n` +
-            `📍 *Floor:* ${room.floor === 0 ? 'Ground Floor' : 'First Floor'}\n\n` +
-            `📅 *Check-In:* ${formatDate(checkIn)}\n` +
-            `📅 *Check-Out:* ${formatDate(checkOut)}\n` +
-            `🌙 *Nights:* ${nights}\n` +
-            `👥 *Guests:* ${guests}\n\n` +
-            `💰 *Price/Night:* ₹${pricePerNight}\n` +
-            (discountAmount > 0
-                ? `🎁 *Discount:* -₹${discountAmount} (${appliedCoupon?.code})\n`
-                : '') +
-            `💵 *Total Amount:* ₹${finalAmount}\n\n` +
-            `💬 *Special Requests:*\n${
-                specialRequests ? specialRequests : 'None'
-            }\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Please confirm my booking. 🙏`;
+            if (!res.data.success) {
+                throw new Error(res.data.message || 'Booking save failed');
+            }
 
-        // 👇 URL encode
-        const encodedMessage = encodeURIComponent(message);
+            console.log('✅ Booking saved to DB:', res.data.booking);
+            toast.success('Booking request bheja gaya ✅');
 
-        // 👇 WhatsApp kholo
-        window.open(
-            `https://wa.me/${adminNumber}?text=${encodedMessage}`,
-            '_blank'
-        );
+            // ============================================
+            // STEP 2: WHATSAPP MESSAGE BANAO
+            // ============================================
+            const rawNumber =
+                settings?.contact?.phone1 ||
+                settings?.phone ||
+                '9315377668';
+            const adminNumber = rawNumber.replace(/[^0-9]/g, '');
 
-        toast.success('WhatsApp khul raha hai... Please send the message to confirm.');
+            const formatDate = (dateStr) => {
+                if (!dateStr) return 'N/A';
+                const d = new Date(dateStr);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                return `${day}-${month}-${year}`;
+            };
+
+            const bookingId = res.data.booking._id;
+            const invoiceNumber = res.data.booking.invoiceNumber || 'N/A';
+
+            const message =
+                `🏨 *New Booking Request*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                `🆔 *Booking ID:* ${invoiceNumber}\n\n` +
+                `👤 *Name:* ${user?.name || 'N/A'}\n` +
+                `📧 *Email:* ${user?.email || 'N/A'}\n` +
+                `📞 *Phone:* ${phone}\n\n` +
+                `🛏️ *Room:* ${room.roomType} (Room ${room.roomNumber})\n` +
+                `📍 *Floor:* ${room.floor === 0 ? 'Ground Floor' : 'First Floor'}\n\n` +
+                `📅 *Check-In:* ${formatDate(checkIn)}\n` +
+                `📅 *Check-Out:* ${formatDate(checkOut)}\n` +
+                `🌙 *Nights:* ${nights}\n` +
+                `👥 *Guests:* ${guests}\n\n` +
+                `💰 *Price/Night:* ₹${pricePerNight}\n` +
+                (discountAmount > 0
+                    ? `🎁 *Discount:* -₹${discountAmount} (${appliedCoupon?.code})\n`
+                    : '') +
+                `💵 *Total Amount:* ₹${finalAmount}\n\n` +
+                `💬 *Special Requests:*\n${
+                    specialRequests ? specialRequests : 'None'
+                }\n\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Please confirm my booking. 🙏`;
+
+            const encodedMessage = encodeURIComponent(message);
+
+            // ============================================
+            // STEP 3: WHATSAPP KHOLO
+            // ============================================
+            window.open(
+                `https://wa.me/${adminNumber}?text=${encodedMessage}`,
+                '_blank'
+            );
+
+            toast.success('WhatsApp khul raha hai...');
+
+            // ============================================
+            // STEP 4: MY BOOKINGS PAGE PE REDIRECT
+            // ============================================
+            setTimeout(() => {
+                navigate('/my-bookings');
+            }, 2000);
+        } catch (err) {
+            console.error('Booking error:', err);
+            toast.error(
+                err.response?.data?.message ||
+                err.message ||
+                'Booking save nahi hui. Dobara try karein.'
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
